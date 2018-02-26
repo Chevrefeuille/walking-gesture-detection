@@ -60,14 +60,14 @@ for dyad in dyads:
         # plt.plot([c[0] for c in coords], [c[1] for c in coords])
         # plt.show()
 
-# computation of the homography and plot of the trajectories on the video
-sensor_world_coordinates = np.array([
-    [12121, 6023, 0],   # A
-    [8518, -13, 0],     # B
-    [19302, 6749, 0],   # C
-    [15679, -47, 0],    # D
-    [25828, 6684, 0],   # E
-    [25637, -35, 0],    # F
+# calibration of the camera and plot of the trajectories on the video
+calibration_world_coordinates = np.array([
+    [12121, 6023, 0],    # A
+    [8518, -13, 0],      # B
+    [19302, 6749, 0],    # C
+    [15679, -47, 0],     # D
+    [25828, 6684, 0],    # E
+    [25637, -35, 0],     # F
     [35664, 6572, 0],   # G
     [34864, -88, 0],    # H
     [39402, 6520, 0],   # I
@@ -75,32 +75,23 @@ sensor_world_coordinates = np.array([
     [44470, 6511, 0]    # K
 ], np.float32)
 
-# sensor_image_coordinates = np.array([
-#     [1302, 467],     # A
-#     [986, 462],     # B
-#     [1363, 488],     # C
-#     [921, 480],      # D
-#     [1379, 515],     # E
-#     [774, 518],      # F
-#     [1440, 603],     # G
-#     [474, 598],      # H
-#     [1488, 684],     # I
-#     [147, 685],      # J
-#     [1669, 992]      # K
-#  ], np.float32)
+# plot coordinates of the sensors
+# plt.plot([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates], 'o')
+# plt.show()
 
-sensor_image_coordinates = np.array([
-    [1359, 382],     # A
-    [1039, 381],     # B
-    [1420, 403],     # C
-    [974, 399],      # D
-    [1437, 429],     # E
-    [828, 439],      # F
-    [1499, 462],     # G
-    [528, 466],      # H
-    [1546, 524],     # I
-    [205, 540],      # J
-    [1731, 736]      # K
+
+calibration_image_coordinates = np.array([
+    [1302, 467],     # A
+    [986, 462],      # B
+    [1363, 488],     # C
+    [921, 480],      # D
+    [1379, 515],     # E
+    [774, 518],      # F
+    [1440, 603],     # G
+    [474, 598],      # H
+    [1488, 684],     # I
+    [147, 685],      # J
+    [1669, 992]      # K
 ], np.float32)
 
 # reading the video
@@ -112,7 +103,7 @@ if vcap.isOpened():
     height = int(vcap.get(4))
 
 retval, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
-    [sensor_world_coordinates], [sensor_image_coordinates],
+    [calibration_world_coordinates], [calibration_image_coordinates],
     (width, height), None, None
 )
 
@@ -143,8 +134,8 @@ while(True):
     ret, frame = dyad_cap.read()
 
     # adding points to the frame
-    for point in sensor_image_coordinates:
-        cv2.circle(frame, (point[0], point[1]), 10, (0,255,0)) 
+    for point in image_points:
+        cv2.circle(frame, (point[0][0], point[0][1]), 10, (0,255,0)) 
         resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
     # display the resulting frame
