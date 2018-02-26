@@ -13,16 +13,20 @@ def parse_trajectory(file_path):
         input: file path as a string
         output: lists containing the time and (x, y) couples
     """
-    time, coords = [], []
+    time, x, y = [], [], []
     with open(file_path) as f:
         n = int(f.readline())
         for _ in range(n):
             line = f.readline().split(";")
+            ms_time = int(float(line[0]))
+            s_time = int(float(line[0])/1000)
+            ms = ms_time - s_time * 1000
             time.append(datetime.datetime.fromtimestamp(
-                int(float(line[0])/1000)
-            ))
-            coords.append((float(line[1]), float(line[2])))
-    return time, coords
+                s_time) + datetime.timedelta(milliseconds=ms)
+            )
+            x.append(float(line[1]))
+            y.append(float(line[2]))
+    return time, x, y
 
 
 folder = "2010_10_06"
@@ -49,18 +53,18 @@ dyads_trajectories = []
 # extraction of the correspondant trajectories for the 2 people
 for dyad in dyads:
     file_trajectory = "./trajectories/" + folder + "/crowd/path_" + str(dyad[0]) + ".csv"
-    time, coords = parse_trajectory(file_trajectory)
+    time, x, y = parse_trajectory(file_trajectory)
     video_time = []
     t_0 = (time[0] + delta_time)
     if t_0 < video_ending: # for the first video
         for t in time:
             video_time.append((t + delta_time))
-        dyads_trajectories.append([video_time, coords])
+        dyads_trajectories.append(list(zip(video_time, x, y)))
         # plotting the trajectories on a 2D plan
         # plt.plot([c[0] for c in coords], [c[1] for c in coords])
         # plt.show()
 
-# calibration of the camera and plot of the trajectories on the video
+# calibration of the camera
 calibration_world_coordinates = np.array([
     [12121, 6023, 0],    # A
     [8518, -13, 0],      # B
@@ -74,11 +78,6 @@ calibration_world_coordinates = np.array([
     [39447, -75, 0],    # J
     [44470, 6511, 0]    # K
 ], np.float32)
-
-# plot coordinates of the sensors
-# plt.plot([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates], 'o')
-# plt.show()
-
 
 calibration_image_coordinates = np.array([
     [1302, 467],     # A
@@ -109,40 +108,68 @@ retval, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
 
 # splitting of the video into corresponding sub-videos
 i = 0
-video_times = {} # contains ref for start time and stop time
+subvideo_times = {} # contains ref for start time and stop time
 for trajectory in dyads_trajectories:
     t_init = (trajectory[0][0] - video_beginning).total_seconds()
-    t_final = (trajectory[0][len(trajectory[0])-1] - video_beginning).total_seconds()
+    t_final = (trajectory[-1][0] - video_beginning).total_seconds()
     duration = t_final - t_init
     subvideo_name = "00000_dyads/sub_" + str(i) + ".avi"
-    video_times[i] = (t_init, t_final)
+    subvideo_times[i] = (t_init, t_final)
+    for j in range(len(trajectory)):
+        # change time relatively to the sub_video
+        trajectory[j] += ((trajectory[j][0] - video_beginning).total_seconds() - t_init,)
     # ffmpeg_extract_subclip("./videos/00000.AVI", t_init, t_final, "./videos/" + subvideo_name)
     i += 1
 
-traj = dyads_trajectories[0]
+# plotting trajectories for the video j (dyad j)
+j = 2
+fps = 29.97
+time_lists = []
+image_trajectories = []
+for traj in dyads_trajectories:
+    world_traj = []
+    time_list = []
+    for _, x, y, t in traj:
+        world_traj.append([x, y, 0.0])
+        time_list.append(t)
+    
+    # plot world trajectory and coordinates of the sensors
+    # plt.plot([tr[0] for tr in world_traj], [tr[1] for tr in world_traj])
+    # plt.plot([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates], 'o')
+    # plt.show()
 
-image_points, jacobian = cv2.projectPoints(
-    sensor_world_coordinates, rvecs[0], tvecs[0], 
-    camera_matrix, dist_coeffs
-)
+    image_traj, _ = cv2.projectPoints(
+        np.array(world_traj), rvecs[0], tvecs[0], 
+        camera_matrix, dist_coeffs
+    )
+    image_traj = [i[0].tolist() for i in image_traj]
+    image_trajectories.append([[time_list[i]] + image_traj[i] for i in range(len(image_traj))])
 
-dyad_cap = cv2.VideoCapture('./videos/00000_dyads/sub_0.avi')
+
+dyad_cap = cv2.VideoCapture('./videos/00000_dyads/sub_' + str(j) + '.avi')
+traj = image_trajectories[j]
 
 # read the video
+frame_id = 0
+coord_id = 0
 while(True):
     # capture frame-by-frame
     ret, frame = dyad_cap.read()
+    
+    frame_time = frame_id / fps
 
-    # adding points to the frame
-    for point in image_points:
-        cv2.circle(frame, (point[0][0], point[0][1]), 10, (0,255,0)) 
-        resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
+    if traj[coord_id + 1][0] < frame_time:
+        coord_id += 1
+    # adding point to the frame 
+    cv2.circle(frame, (int(traj[coord_id][1]), int(traj[coord_id][2])), 10, (0,255,0), -1) 
+    
+    resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
     # display the resulting frame
     cv2.imshow('frame', resized_frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
+    frame_id += 1
 # When everything done, release the capture
 dyad_cap.release()
 cv2.destroyAllWindows()
