@@ -3,3 +3,5 @@
 preprocessing/videos/
 preprocessing/trajectories/
 preprocessing/annotations/
+
+*.pdf
