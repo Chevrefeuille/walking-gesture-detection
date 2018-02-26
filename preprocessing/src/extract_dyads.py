@@ -149,6 +149,13 @@ for traj in dyads_trajectories:
 dyad_cap = cv2.VideoCapture('./videos/00000_dyads/sub_' + str(j) + '.avi')
 traj = image_trajectories[j]
 
+# compute projection of the sensor references
+sensor_points, _ = cv2.projectPoints(
+        calibration_world_coordinates, rvecs[0], tvecs[0], 
+        camera_matrix, dist_coeffs
+)
+sensor_points = [i[0].tolist() for i in sensor_points]
+
 # read the video
 frame_id = 0
 coord_id = 0
@@ -160,8 +167,12 @@ while(True):
 
     if traj[coord_id + 1][0] < frame_time:
         coord_id += 1
-    # adding point to the frame 
+    # adding trajectory point
     cv2.circle(frame, (int(traj[coord_id][1]), int(traj[coord_id][2])), 10, (0,255,0), -1) 
+
+    # adding sensor reference
+    for point in sensor_points:
+        cv2.circle(frame, (int(point[0]), int(point[1])), 10, (0,0,255), -1) 
     
     resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
