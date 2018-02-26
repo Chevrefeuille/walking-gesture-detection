@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import datetime
 
+import cv2
+import numpy as np
+
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 def parse_trajectory(file_path):
@@ -53,15 +56,90 @@ for dyad in dyads:
         for t in time:
             video_time.append((t + delta_time))
         dyads_trajectories.append([video_time, coords])
-        plt.plot([c[0] for c in coords], [c[1] for c in coords])
-        plt.show()
+        # plotting the trajectories on a 2D plan
+        # plt.plot([c[0] for c in coords], [c[1] for c in coords])
+        # plt.show()
+
+# computation of the homography and plot of the trajectories on the video
+sensor_world_coordinates = np.array([
+    [12121, 6023, 0],   # A
+    [8518, -13, 0],     # B
+    [19302, 6749, 0],   # C
+    [15679, -47, 0],    # D
+    [25828, 6684, 0],   # E
+    [25637, -35, 0],    # F
+    [35664, 6572, 0],   # G
+    [34864, -88, 0],    # H
+    [39402, 6520, 0],   # I
+    [39447, -75, 0],    # J
+    [44470, 6511, 0]    # K
+], np.float32)
+
+sensor_image_coordinates = np.array([
+    [1302, 467],     # A
+    [986, 462],     # B
+    [1363, 488],     # C
+    [921, 480],      # D
+    [1379, 515],     # E
+    [774, 518],      # F
+    [1440, 603],     # G
+    [474, 598],      # H
+    [1488, 684],     # I
+    [147, 685],      # J
+    [1669, 992]      # K
+ ], np.float32)
+
+# reading the video
+vcap = cv2.VideoCapture('./videos/00000.AVI')
+
+if vcap.isOpened(): 
+    # get vcap property 
+    width = int(vcap.get(3))
+    height = int(vcap.get(4))
+
+retval, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
+    [sensor_world_coordinates], [sensor_image_coordinates],
+    (width, height), None, None
+)
 
 # splitting of the video into corresponding sub-videos
 i = 0
+video_times = {} # contains ref for start time and stop time
 for trajectory in dyads_trajectories:
     t_init = (trajectory[0][0] - video_beginning).total_seconds()
     t_final = (trajectory[0][len(trajectory[0])-1] - video_beginning).total_seconds()
     duration = t_final - t_init
-    ffmpeg_extract_subclip("./videos/00000.AVI", t_init, t_final, "./videos/00000_dyads/sub_"+str(i)+".avi")
+    subvideo_name = "00000_dyads/sub_" + str(i) + ".avi"
+    video_times[i] = (t_init, t_final)
+    # ffmpeg_extract_subclip("./videos/00000.AVI", t_init, t_final, "./videos/" + subvideo_name)
     i += 1
+
+traj = dyads_trajectories[0]
+
+image_points, jacobian = cv2.projectPoints(
+    sensor_world_coordinates, rvecs[0], tvecs[0], 
+    camera_matrix, dist_coeffs
+)
+
+dyad_cap = cv2.VideoCapture('./videos/00000_dyads/sub_0.avi')
+
+# read the video
+while(True):
+    # capture frame-by-frame
+    ret, frame = dyad_cap.read()
+
+    # adding points to the frame
+    for point in sensor_image_coordinates:
+        cv2.circle(frame, (point[0], point[1]), 10, (0,255,0)) 
+        resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
+
+    # display the resulting frame
+    cv2.imshow('frame', resized_frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# When everything done, release the capture
+dyad_cap.release()
+cv2.destroyAllWindows()
+
     
