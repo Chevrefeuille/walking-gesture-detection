@@ -4,7 +4,7 @@
 
 - cao2017realtime
 - fang2017rmpe
-- tome2017lifting.pdf
+- tome2017lifting
 
 ## Repositories
 
