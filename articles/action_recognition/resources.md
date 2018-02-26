@@ -2,11 +2,11 @@
 
 ## Articles
 
-- das2018fusion
-- liu2017skeleton
-- kipf2016semi
-- rahmani2017
-- yan2018spatial
+- [das2018fusion](https://arxiv.org/pdf/1802.00421.pdf)
+- [liu2017skeleton](https://arxiv.org/pdf/1706.08276.pdf)
+- [kipf2016semi](https://arxiv.org/pdf/1609.02907.pdf)
+- [rahmani2017](https://arxiv.org/pdf/1602.00828.pdf)
+- [yan2018spatial](https://arxiv.org/pdf/1801.07455.pdf)
 
 ## Repositories
 
