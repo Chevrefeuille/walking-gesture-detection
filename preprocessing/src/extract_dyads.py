@@ -66,95 +66,100 @@ for dyad in dyads:
 
 # calibration of the camera
 calibration_world_coordinates = np.array([
-    [12121, 6023, 0],    # A
-    [8518, -13, 0],      # B
-    [19302, 6749, 0],    # C
-    [15679, -47, 0],     # D
-    [25828, 6684, 0],    # E
-    [25637, -35, 0],     # F
-    [35664, 6572, 0],   # G
-    [34864, -88, 0],    # H
-    [39402, 6520, 0],   # I
-    [39447, -75, 0],    # J
-    [44470, 6511, 0]    # K
+    [12121, 6023],    # A
+    [8518, -13],      # B
+    [19302, 6749],    # C
+    [15679, -47],     # D
+    [25828, 6684],    # E
+    [25637, -35],     # F
+    [35664, 6572],   # G
+    [34864, -88],    # H
+    [39402, 6520],   # I
+    [39447, -75]    # J
+    # [44470, 6511]    # K
 ], np.float32)
+
+# calibration_image_coordinates = np.array([
+#     [1302, 467],     # A
+#     [986, 462],      # B
+#     [1363, 488],     # C
+#     [921, 480],      # D
+#     [1379, 515],     # E
+#     [774, 518],      # F
+#     [1440, 603],     # G
+#     [474, 598],      # H
+#     [1488, 684],     # I
+#     [147, 685],      # J
+#     [1669, 992]      # K
+# ], np.float32)
 
 calibration_image_coordinates = np.array([
-    [1302, 467],     # A
-    [986, 462],      # B
-    [1363, 488],     # C
-    [921, 480],      # D
-    [1379, 515],     # E
-    [774, 518],      # F
-    [1440, 603],     # G
-    [474, 598],      # H
-    [1488, 684],     # I
-    [147, 685],      # J
-    [1669, 992]      # K
+    [1302, 516],     # A
+    [986, 508],      # B
+    [1366, 550],     # C
+    [920, 534],      # D
+    [1382, 598],     # E
+    [776, 594],      # F
+    [1438, 776],     # G
+    [474, 738],      # H
+    [1498, 950],     # I
+    [150, 894]       # J
 ], np.float32)
 
-# reading the video
-vcap = cv2.VideoCapture('./videos/00000.AVI')
+homography_matrix, mask = cv2.findHomography(calibration_world_coordinates, calibration_image_coordinates)
 
-if vcap.isOpened(): 
-    # get vcap property 
-    width = int(vcap.get(3))
-    height = int(vcap.get(4))
+# # splitting of the video into corresponding sub-videos
+# i = 0
+# subvideo_times = {} # contains ref for start time and stop time
+# for trajectory in dyads_trajectories:
+#     t_init = (trajectory[0][0] - video_beginning).total_seconds()
+#     t_final = (trajectory[-1][0] - video_beginning).total_seconds()
+#     duration = t_final - t_init
+#     subvideo_name = "00000_dyads/sub_" + str(i) + ".avi"
+#     subvideo_times[i] = (t_init, t_final)
+#     for j in range(len(trajectory)):
+#         # change time relatively to the sub_video
+#         trajectory[j] += ((trajectory[j][0] - video_beginning).total_seconds() - t_init,)
+#     # ffmpeg_extract_subclip("./videos/00000.AVI", t_init, t_final, "./videos/" + subvideo_name)
+#     i += 1
 
-retval, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
-    [calibration_world_coordinates], [calibration_image_coordinates],
-    (width, height), None, None
-)
-
-# splitting of the video into corresponding sub-videos
-i = 0
-subvideo_times = {} # contains ref for start time and stop time
-for trajectory in dyads_trajectories:
-    t_init = (trajectory[0][0] - video_beginning).total_seconds()
-    t_final = (trajectory[-1][0] - video_beginning).total_seconds()
-    duration = t_final - t_init
-    subvideo_name = "00000_dyads/sub_" + str(i) + ".avi"
-    subvideo_times[i] = (t_init, t_final)
-    for j in range(len(trajectory)):
-        # change time relatively to the sub_video
-        trajectory[j] += ((trajectory[j][0] - video_beginning).total_seconds() - t_init,)
-    # ffmpeg_extract_subclip("./videos/00000.AVI", t_init, t_final, "./videos/" + subvideo_name)
-    i += 1
-
-# plotting trajectories for the video j (dyad j)
-j = 2
-fps = 29.97
-time_lists = []
-image_trajectories = []
-for traj in dyads_trajectories:
-    world_traj = []
-    time_list = []
-    for _, x, y, t in traj:
-        world_traj.append([x, y, 0.0])
-        time_list.append(t)
+# # plotting trajectories for the video j (dyad j)
+j = 4
+# time_lists = []
+# image_trajectories = []
+# for traj in dyads_trajectories:
+#     world_traj = []
+#     time_list = []
+#     for _, x, y, t in traj:
+#         world_traj.append([x, y])
+#         time_list.append(t)
     
-    # plot world trajectory and coordinates of the sensors
-    # plt.plot([tr[0] for tr in world_traj], [tr[1] for tr in world_traj])
-    # plt.plot([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates], 'o')
-    # plt.show()
+#     # plot world trajectory and coordinates of the sensors
+#     # plt.plot([tr[0] for tr in world_traj], [tr[1] for tr in world_traj])
+#     # plt.plot([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates], 'o')
+#     # plt.show()
 
-    image_traj, _ = cv2.projectPoints(
-        np.array(world_traj), rvecs[0], tvecs[0], 
-        camera_matrix, dist_coeffs
-    )
-    image_traj = [i[0].tolist() for i in image_traj]
-    image_trajectories.append([[time_list[i]] + image_traj[i] for i in range(len(image_traj))])
+#     # image_traj, _ = cv2.projectPoints(
+#     #     np.array(world_traj), rvecs[0], tvecs[0], 
+#     #     camera_matrix, dist_coeffs
+#     # )
+#     world_traj = np.array(world_traj, dtype=np.float32)
+#     image_traj = cv2.perspectiveTransform(world_traj[None, :, :], homography_matrix)
+#     image_traj = image_traj.tolist()[0]
+#     image_trajectories.append([[time_list[i]] + image_traj[i] for i in range(len(image_traj))])
 
 
 dyad_cap = cv2.VideoCapture('./videos/00000_dyads/sub_' + str(j) + '.avi')
-traj = image_trajectories[j]
+fps = 29.97
 
+# traj = image_trajectories[j]
 # compute projection of the sensor references
-sensor_points, _ = cv2.projectPoints(
-        calibration_world_coordinates, rvecs[0], tvecs[0], 
-        camera_matrix, dist_coeffs
-)
-sensor_points = [i[0].tolist() for i in sensor_points]
+# sensor_points, _ = cv2.projectPoints(
+#         calibration_world_coordinates, rvecs[0], tvecs[0], 
+#         camera_matrix, dist_coeffs
+# )
+# sensor_points = cv2.perspectiveTransform(calibration_world_coordinates[None, :, :], homography_matrix)
+# sensor_points = sensor_points.tolist()[0]
 
 # read the video
 frame_id = 0
@@ -165,14 +170,14 @@ while(True):
     
     frame_time = frame_id / fps
 
-    if traj[coord_id + 1][0] < frame_time:
-        coord_id += 1
+    # if traj[coord_id + 1][0] < frame_time:
+    #     coord_id += 1
     # adding trajectory point
-    cv2.circle(frame, (int(traj[coord_id][1]), int(traj[coord_id][2])), 10, (0,255,0), -1) 
+    # cv2.circle(frame, (int(traj[coord_id][1]), int(traj[coord_id][2])), 10, (0,255,0), -1) 
 
     # adding sensor reference
-    for point in sensor_points:
-        cv2.circle(frame, (int(point[0]), int(point[1])), 10, (0,0,255), -1) 
+    for point in calibration_image_coordinates:
+        cv2.circle(frame, (int(point[0]), int(point[1])), 3, (0,0,255), -1) 
     
     resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
