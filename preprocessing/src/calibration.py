@@ -16,7 +16,7 @@ def input_reference():
     """
     Open a video and wait for the user to select references point.
     """
-    dyad_cap = cv2.VideoCapture('./videos/00000.avi')
+    dyad_cap = cv2.VideoCapture('./videos/2010_10_06/00000/00000.avi')
 
     # read first frame
     ret, frame = dyad_cap.read()
