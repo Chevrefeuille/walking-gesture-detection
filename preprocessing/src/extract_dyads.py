@@ -30,6 +30,30 @@ def parse_trajectory(file_path):
     return time, x, y
 
 
+def find_acceptable_portion(trajectory):
+    """
+    Find the portion of the trajectory that correspond to an interpretable portion of the video
+    """
+    min_x, max_x = 40000, 45000
+    min_y, max_y = 0, 6000
+    acceptable_portion = []
+    acceptable = False
+    n = len(trajectory)
+    for i in range(n):
+        x, y = trajectory[i][1], trajectory[i][2]
+        if not acceptable:
+            if x > min_x and x < max_x and y > min_y and y < max_y:
+                acceptable = True
+                acceptable_portion.append(trajectory[i])
+        else:
+            if not (x > min_x and x < max_x and y > min_y and y < max_y):
+                break
+            else:
+                acceptable_portion.append(trajectory[i])
+    return acceptable_portion
+        
+
+
 folder = "2010_10_06"
 video_time_ref = datetime.datetime(2010, 10, 6, 0, 0, 6) + datetime.timedelta(milliseconds=500)
 absolute_time_ref = datetime.datetime(2010, 10, 6, 10, 40, 48)
@@ -112,22 +136,23 @@ homography_matrix, mask = cv2.findHomography(calibration_world_coordinates, cali
 
 
 # splitting of the video into corresponding sub-videos
-i = 0
 subvideo_times = {} # contains ref for start time and stop time
 for pedestrian_id, trajectory in dyads_trajectories.items():
-    t_init = (trajectory[0][0] - video_beginning).total_seconds()
-    t_final = (trajectory[-1][0] - video_beginning).total_seconds()
-    duration = t_final - t_init
-    subvideo_name = "00000_dyads/" + str(pedestrian_id) + ".avi"
-    subvideo_times[pedestrian_id] = (t_init, t_final)
-    for j in range(len(trajectory)):
-        # change time relatively to the sub_video
-        trajectory[j][0] = (trajectory[j][0] - video_beginning).total_seconds() - t_init
-    # ffmpeg_extract_subclip("./videos/00000.AVI", t_init, t_final, "./videos/" + subvideo_name)
-    i += 1
+    trajectory = find_acceptable_portion(trajectory)
+    if len(trajectory) != 0:
+        t_init = (trajectory[0][0] - video_beginning).total_seconds()
+        t_final = (trajectory[-1][0] - video_beginning).total_seconds()
+        duration = t_final - t_init
+        subvideo_name = "00000_dyads/" + str(pedestrian_id) + ".avi"
+        subvideo_times[pedestrian_id] = (t_init, t_final)
+        for j in range(len(trajectory)):
+            # change time relatively to the sub_video
+            trajectory[j][0] = (trajectory[j][0] - video_beginning).total_seconds() - t_init
+        dyads_trajectories[pedestrian_id] = trajectory
+        # ffmpeg_extract_subclip("./videos/00000.AVI", t_init, t_final, "./videos/" + subvideo_name)
 
-# # plotting trajectories for the video j (dyad j)
-j = 10525001
+# compute image trajectory using the homography matrix
+j = 10533200
 time_lists = []
 image_trajectories = {}
 for pedestrian_id, traj in dyads_trajectories.items():
@@ -152,9 +177,6 @@ for pedestrian_id, traj in dyads_trajectories.items():
     image_trajectories[pedestrian_id] = [[time_list[i]] + image_traj[i] for i in range(len(image_traj))]
 
 
-dyad_cap = cv2.VideoCapture('./videos/00000_dyads/' + str(j) + '.avi')
-fps = 29.97
-
 traj = image_trajectories[j]
 world_traj = dyads_trajectories[j]
 # for t, _, _ in traj:
@@ -170,6 +192,10 @@ sensor_points = sensor_points.tolist()[0]
 # read the video
 frame_id = 0
 coord_id = 0
+
+dyad_cap = cv2.VideoCapture('./videos/00000_dyads/' + str(j) + '.avi')
+fps = 29.97
+
 while(True):
     # capture frame-by-frame
     ret, frame = dyad_cap.read()
