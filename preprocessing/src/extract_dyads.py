@@ -11,6 +11,28 @@ import numpy as np
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 
+def find_video_reference_time(vid, folder):
+    """
+    Find the ellapsed time corresponding the the beggining of the given video.
+        input: 
+            vid: the id of the video
+            folder: the folder (date) containing the video
+        output: 
+            total_time: the total time in second corresponding to the beginning of this video
+            video_duration: the duration of this video
+    """
+    duration_file = folder + '/durations.dat'
+    begining, video_duration = 0, 0
+    with open(duration_file, 'r') as f:
+        for line in f.readlines():
+            line_vid, duration = line.split()
+            if line_vid == vid:
+                video_duration = float(duration)
+                break
+            begining += float(duration)
+    return begining, video_duration
+
+
 def parse_trajectory(file_path):
     """
     Parse the trajectory contained in the given file
@@ -66,103 +88,108 @@ def main(argv):
     args = parser.parse_args()
     
     # definition of reference time
-    folder = "2010_10_06"
+    folder = args.video.split('/')[-3]
+    video_id = args.video.split('/')[-2]
+
+    beginning, duration = find_video_reference_time(video_id, "videos/" + folder)
+    video_beginning = datetime.datetime(2010, 10, 6, 0, 0, 0) + datetime.timedelta(seconds=beginning)
+    video_ending = video_beginning + datetime.timedelta(seconds=duration)
+
     video_time_ref = datetime.datetime(2010, 10, 6, 0, 0, 6) + datetime.timedelta(milliseconds=500)
     absolute_time_ref = datetime.datetime(2010, 10, 6, 10, 40, 48)
     delta_time = video_time_ref - absolute_time_ref
 
-    # video_beginning = datetime.datetime(2010, 10, 6, 0, 0, 0)
-    # video_ending = datetime.datetime(2010, 10, 6, 0, 16, 45)
+    
+    # parse annotation to find all dyads
+    dyads = [] # list of couple of ids for each dyad
+
+    with open("./annotations/" + folder + "/ground_truth.csv") as f:
+            for line in f:
+                data = list(map(float, line.split(";")))
+                if data[1] == 2 and (int(data[2]), int(data[0])) not in dyads:
+                    # if 2 people in the group and the dyad not already in the list
+                    dyads.append((int(data[0]), int(data[2])))
 
 
-    # # parse annotation to find all dyads
-    # dyads = [] # list of couple of ids for each dyad
+    # trajectory for one individual in each dyad
+    dyads_trajectories = {}
 
-    # with open("./annotations/" + folder + "/ground_truth.csv") as f:
-    #         for line in f:
-    #             data = list(map(float, line.split(";")))
-    #             if data[1] == 2 and (int(data[2]), int(data[0])) not in dyads:
-    #                 # if 2 people in the group and the dyad not already in the list
-    #                 dyads.append((int(data[0]), int(data[2])))
+    # extraction of one trajectory for each dyad
+    for dyad in dyads:
+        file_trajectory = "./trajectories/" + folder + "/crowd/path_" + str(dyad[0]) + ".csv"
+        time, x, y = parse_trajectory(file_trajectory)
+        video_time = []
+        t_0 = (time[0] + delta_time)
+        if t_0 < video_ending and t_0 > video_beginning: # only keeping trajectory from the input video
+            for t in time:
+                video_time.append((t + delta_time))
+            dyads_trajectories[dyad[0]] = list(map(list, list(zip(video_time, x, y))))
+            # plotting the trajectories on a 2D plan
+            # plt.plot([c[0] for c in coords], [c[1] for c in coords])
+            # plt.show()
 
-
-    # # trajectory for one individual in each dyad
-    # dyads_trajectories = {}
-
-    # # extraction of one trajectory for each dyad
-    # for dyad in dyads:
-    #     file_trajectory = "./trajectories/" + folder + "/crowd/path_" + str(dyad[0]) + ".csv"
-    #     time, x, y = parse_trajectory(file_trajectory)
-    #     video_time = []
-    #     t_0 = (time[0] + delta_time)
-    #     if t_0 < video_ending: # for the first video
-    #         for t in time:
-    #             video_time.append((t + delta_time))
-    #         dyads_trajectories[dyad[0]] = list(map(list, list(zip(video_time, x, y))))
-    #         # plotting the trajectories on a 2D plan
-    #         # plt.plot([c[0] for c in coords], [c[1] for c in coords])
-    #         # plt.show()
-
-    # # calibration of the camera
-    # calibration_world_coordinates = np.array([
-    #     [12121, 6023],    # A
-    #     [8518, -13],      # B
-    #     [19302, 6749],    # C
-    #     [15679, -47],     # D
-    #     [25828, 6684],    # E
-    #     [25637, -35],     # F
-    #     [35664, 6572],   # G
-    #     [34864, -88],    # H
-    #     [39402, 6520],   # I
-    #     [39447, -75]    # J
-    #     # [44470, 6511]    # K
-    # ], np.float32)
-
-    # # calibration_image_coordinates = np.array([
-    # #     [1302, 467],     # A
-    # #     [986, 462],      # B
-    # #     [1363, 488],     # C
-    # #     [921, 480],      # D
-    # #     [1379, 515],     # E
-    # #     [774, 518],      # F
-    # #     [1440, 603],     # G
-    # #     [474, 598],      # H
-    # #     [1488, 684],     # I
-    # #     [147, 685],      # J
-    # #     [1669, 992]      # K
-    # # ], np.float32)
+    # calibration of the camera
+    calibration_world_coordinates = np.array([
+        [12121, 6023],    # A
+        [8518, -13],      # B
+        [19302, 6749],    # C
+        [15679, -47],     # D
+        [25828, 6684],    # E
+        [25637, -35],     # F
+        [35664, 6572],   # G
+        [34864, -88],    # H
+        [39402, 6520],   # I
+        [39447, -75]    # J
+        # [44470, 6511]    # K
+    ], np.float32)
 
     # calibration_image_coordinates = np.array([
-    #     [1302, 516],     # A
-    #     [986, 508],      # B
-    #     [1366, 550],     # C
-    #     [920, 534],      # D
-    #     [1382, 598],     # E
-    #     [776, 594],      # F
-    #     [1438, 776],     # G
-    #     [474, 738],      # H
-    #     [1498, 950],     # I
-    #     [150, 894]       # J
+    #     [1302, 467],     # A
+    #     [986, 462],      # B
+    #     [1363, 488],     # C
+    #     [921, 480],      # D
+    #     [1379, 515],     # E
+    #     [774, 518],      # F
+    #     [1440, 603],     # G
+    #     [474, 598],      # H
+    #     [1488, 684],     # I
+    #     [147, 685],      # J
+    #     [1669, 992]      # K
     # ], np.float32)
 
-    # homography_matrix, mask = cv2.findHomography(calibration_world_coordinates, calibration_image_coordinates)
+    calibration_image_coordinates = np.array([
+        [1302, 516],     # A
+        [986, 508],      # B
+        [1366, 550],     # C
+        [920, 534],      # D
+        [1382, 598],     # E
+        [776, 594],      # F
+        [1438, 776],     # G
+        [474, 738],      # H
+        [1498, 950],     # I
+        [150, 894]       # J
+    ], np.float32)
 
+    homography_matrix, mask = cv2.findHomography(
+        calibration_world_coordinates, 
+        calibration_image_coordinates
+    )
 
-    # # splitting of the video into corresponding sub-videos
-    # subvideo_times = {} # contains ref for start time and stop time
-    # for pedestrian_id, trajectory in dyads_trajectories.items():
-    #     trajectory = find_acceptable_portion(trajectory)
-    #     if len(trajectory) != 0:
-    #         t_init = (trajectory[0][0] - video_beginning).total_seconds()
-    #         t_final = (trajectory[-1][0] - video_beginning).total_seconds()
-    #         duration = t_final - t_init
-    #         subvideo_name = "00000_dyads/" + str(pedestrian_id) + ".avi"
-    #         subvideo_times[pedestrian_id] = (t_init, t_final)
-    #         for j in range(len(trajectory)):
-    #             # change time relatively to the sub_video
-    #             trajectory[j][0] = (trajectory[j][0] - video_beginning).total_seconds() - t_init
-    #         dyads_trajectories[pedestrian_id] = trajectory
-    #         # ffmpeg_extract_subclip("./videos/00000.avi", t_init, t_final, "./videos/" + subvideo_name)
+    # split the video into corresponding sub-videos
+    subvideo_times = {} # contains ref for start time and stop time
+    for pedestrian_id, trajectory in dyads_trajectories.items():
+        trajectory = find_acceptable_portion(trajectory)
+        if len(trajectory) != 0:
+            t_init = (trajectory[0][0] - video_beginning).total_seconds()
+            t_final = (trajectory[-1][0] - video_beginning).total_seconds()
+            duration = t_final - t_init
+            subvideo_path = 'videos/' + folder + '/' + video_id + '/dyads/' + str(pedestrian_id) + '.avi'
+            subvideo_times[pedestrian_id] = (t_init, t_final)
+            for j in range(len(trajectory)):
+                # change time relatively to the sub_video
+                trajectory[j][0] = (trajectory[j][0] - video_beginning).total_seconds() - t_init
+            dyads_trajectories[pedestrian_id] = trajectory
+            ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
 
     # # compute image trajectory using the homography matrix
     # j = 10533200
