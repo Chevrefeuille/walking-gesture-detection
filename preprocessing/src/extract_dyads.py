@@ -183,7 +183,6 @@ def main(argv):
             t_init = (trajectory[0][0] - video_beginning).total_seconds()
             if t_init < video_duration:
                 t_final = (trajectory[-1][0] - video_beginning).total_seconds()
-                duration = t_final - t_init
                 subvideo_path = 'videos/' + folder + '/' + video_id + '/dyads/' + str(pedestrian_id) + '.avi'
                 subvideo_times[pedestrian_id] = (t_init, t_final)
                 for j in range(len(trajectory)):
