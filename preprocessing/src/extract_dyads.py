@@ -62,7 +62,7 @@ def find_acceptable_portion(trajectory):
         output: the trajectory points inside the interpretable portion
     """
     min_x, max_x = 40000, 45000
-    min_y, max_y = 0, 6000
+    min_y, max_y = 3000, 6000
     acceptable_portion = []
     acceptable = False
     n = len(trajectory)
@@ -91,9 +91,9 @@ def main(argv):
     folder = args.video.split('/')[-3]
     video_id = args.video.split('/')[-2]
 
-    beginning, duration = find_video_reference_time(video_id, "videos/" + folder)
+    beginning, video_duration = find_video_reference_time(video_id, "videos/" + folder)
     video_beginning = datetime.datetime(2010, 10, 6, 0, 0, 0) + datetime.timedelta(seconds=beginning)
-    video_ending = video_beginning + datetime.timedelta(seconds=duration)
+    video_ending = video_beginning + datetime.timedelta(seconds=video_duration)
 
     video_time_ref = datetime.datetime(2010, 10, 6, 0, 0, 6) + datetime.timedelta(milliseconds=500)
     absolute_time_ref = datetime.datetime(2010, 10, 6, 10, 40, 48)
@@ -181,15 +181,16 @@ def main(argv):
         trajectory = find_acceptable_portion(trajectory)
         if len(trajectory) != 0:
             t_init = (trajectory[0][0] - video_beginning).total_seconds()
-            t_final = (trajectory[-1][0] - video_beginning).total_seconds()
-            duration = t_final - t_init
-            subvideo_path = 'videos/' + folder + '/' + video_id + '/dyads/' + str(pedestrian_id) + '.avi'
-            subvideo_times[pedestrian_id] = (t_init, t_final)
-            for j in range(len(trajectory)):
-                # change time relatively to the sub_video
-                trajectory[j][0] = (trajectory[j][0] - video_beginning).total_seconds() - t_init
-            dyads_trajectories[pedestrian_id] = trajectory
-            ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
+            if t_init < video_duration:
+                t_final = (trajectory[-1][0] - video_beginning).total_seconds()
+                duration = t_final - t_init
+                subvideo_path = 'videos/' + folder + '/' + video_id + '/dyads/' + str(pedestrian_id) + '.avi'
+                subvideo_times[pedestrian_id] = (t_init, t_final)
+                for j in range(len(trajectory)):
+                    # change time relatively to the sub_video
+                    trajectory[j][0] = (trajectory[j][0] - video_beginning).total_seconds() - t_init
+                dyads_trajectories[pedestrian_id] = trajectory
+                ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
 
     # # compute image trajectory using the homography matrix
     # j = 10533200
