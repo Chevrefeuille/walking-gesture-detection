@@ -4,7 +4,7 @@
 
 ### Pre processing
 
- Convert MTS file to AVI using:
+Convert MTS file to AVI using:
 
 ```bash
 $ ffmpeg -i 00000.MTS -b 18000k -ac 2 -ab 320k -deinterlace -s 1920x1080 00000.AVI
