@@ -56,7 +56,14 @@ def parse_trajectory(file_path, delta_time, video_beginning):
     return t, x, y
 
 def compute_middle_trajectory(t_1, x_1, y_1, t_2, x_2, y_2):
-
+    """
+    Compute the trajetory of the middle between the two trajectory when
+    the times match
+    input: 
+        t_1, x_1, y_1: time and coordinates lists for the first trajectory
+        t_2, x_2, y_2: time and coordinates lists for the second trajectory
+    output: the list of triplets (t, x, y) for the middle point
+    """
     t_0 = max(t_1[0], t_2[0])
     t_end = min(t_1[-1], t_2[-1])
     i_0_1, i_end_1 = 0, 0
@@ -114,18 +121,6 @@ def find_cropping_boundaries(trajectory, homography):
         output:
             (i, j) coordinates to crop the image
     """
-
-def crop_video(video_name, i_min, i_max, j_min, j_max, target_name):
-    height = i_max - i_min
-    width = j_max - j_min
-    crop_dim = str(i_min) + ":" + str(j_min) + ":" + str(i_max - i_min) + ":" + str(j_max - j_min)
-    cmd = ["ffmepg",
-        "-i", video_name,
-        "-filter:v",
-        "\"crop=" + crop_dim + "\"",
-        "-c:a", "copy", target_name]
-    print(cmd)
-    # sp.call(cmd)
 
 def main(argv):
     height, width = 1080, 1920
