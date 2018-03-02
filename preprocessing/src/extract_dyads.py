@@ -3,7 +3,6 @@ import argparse
 import subprocess as sp
 
 import matplotlib.pyplot as plt
-from pathlib import Path
 import datetime
 
 import cv2
@@ -142,7 +141,6 @@ def main(argv):
     beginning, video_duration = find_video_reference_time(video_id, "videos/" + folder)
     ending = beginning + video_duration
     video_beginning = datetime.datetime(2010, 10, 6, 0, 0, 0) + datetime.timedelta(seconds=beginning)
-    video_ending = video_beginning + datetime.timedelta(seconds=video_duration)
 
     # definition of reference times
     video_time_ref = datetime.datetime(2010, 10, 6, 0, 0, 8) # when the computer is shown in the video
@@ -249,6 +247,9 @@ def main(argv):
 
     # split the video into corresponding sub-videos
     subvideo_times = {} # contains ref for start time and stop time
+
+    valid_trajectories = {}
+
     for pedestrian_id, trajectory in dyads_trajectories.items():
         trajectory = find_acceptable_portion(trajectory)
         if len(trajectory) != 0:
@@ -260,17 +261,16 @@ def main(argv):
                 for j in range(len(trajectory)):
                     # change time relatively to the sub_video
                     trajectory[j][0] = trajectory[j][0] - t_init
-                dyads_trajectories[pedestrian_id] = trajectory
+                valid_trajectories[pedestrian_id] = trajectory
                 # crop_video()
-                # ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
+                ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
                 
     
 
     # compute image trajectory using the homography matrix
-    j = 11223401
     image_trajectories = {}
     bbs = {}
-    for pedestrian_id, traj in dyads_trajectories.items():
+    for pedestrian_id, traj in valid_trajectories.items():
         world_traj, world_bl_bb, world_tr_bb = [], [], []
         time_list = []
         for t, x, y in traj:
@@ -309,68 +309,79 @@ def main(argv):
         image_trajectories[pedestrian_id] = [[time_list[i]] + image_traj[i] for i in range(len(image_traj))]
         bbs[pedestrian_id] = [image_bl_bb, image_tr_bb]
 
-    traj = image_trajectories[j]
-    world_traj = dyads_trajectories[j]
-    bb = bbs[j]
-    # for t, _, _ in traj:
-    #     print(t)
+    for pedestrian_id in image_trajectories:
+        traj = image_trajectories[pedestrian_id]
+        world_traj = dyads_trajectories[pedestrian_id]
+        bb = bbs[pedestrian_id]
+        # for t, _, _ in traj:
+        #     print(t)
 
-    # compute projection of the sensor references
-    sensor_points, jacobian = cv2.projectPoints(
-        calibration_test_coordinates,
-        rvecs[0], tvecs[0], camera_matrix, dist_coeffs)
-    sensor_points = [s[0].tolist() for s in sensor_points]
+        # compute projection of the sensor references
+        # sensor_points, jacobian = cv2.projectPoints(
+        #     calibration_test_coordinates,
+        #     rvecs[0], tvecs[0], camera_matrix, dist_coeffs)
+        # sensor_points = [s[0].tolist() for s in sensor_points]
 
-    # # plt.ion()
-    # # plt.scatter([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates])
+        # # plt.ion()
+        # # plt.scatter([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates])
 
-    # read the video
-    frame_id = 0
-    coord_id = 0
+        # read the video
+        frame_id = 0
+        coord_id = 0
 
-    dyad_cap = cv2.VideoCapture('./videos/2010_10_06/00002/dyads/' + str(j) + '.avi')
-    # dyad_cap = cv2.VideoCapture('./videos/2010_10_06/00002/00002.avi')
-    fps = 29.97
-
-    while(True):
-        # capture frame-by-frame
-        ret, frame = dyad_cap.read()
+        fps = 29.97
+        video_folder = './videos/' + folder + '/' + video_id + '/dyads/' 
+        dyad_cap = cv2.VideoCapture(video_folder + str(pedestrian_id) + '.avi')
+        masked_video = cv2.VideoWriter(
+            video_folder + str(pedestrian_id) + '_masked.avi',
+            -1, fps, (width, height)
+        )
+        # dyad_cap = cv2.VideoCapture('./videos/2010_10_06/00002/00002.avi')
         
-        frame_time = frame_id / fps
+        while(True):
+            # capture frame-by-frame
+            ret, frame = dyad_cap.read()
+            if not type(frame) is np.ndarray:
+                break
+            frame_time = frame_id / fps
+            if traj[coord_id + 1][0] < frame_time:
+                coord_id += 1
 
-        if traj[coord_id + 1][0] < frame_time:
-            coord_id += 1
+            # print(frame_time, traj[coord_id][0])
 
-        # print(frame_time, traj[coord_id][0])
+            # adding trajectory point
+            # cv2.circle(frame, (int(traj[coord_id][1]), int(traj[coord_id][2])), 10, (0,255,0), -1)
 
-        # adding trajectory point
-        # cv2.circle(frame, (int(traj[coord_id][1]), int(traj[coord_id][2])), 10, (0,255,0), -1)
+            mask = np.zeros((height,width), np.uint8)
+            cv2.rectangle(mask, 
+                (int(bb[0][coord_id][0]), int(bb[0][coord_id][1])),
+                (int(bb[1][coord_id][0]), int(bb[1][coord_id][1])),
+                255, thickness=-1)
+            # print(mask.shape)
 
-        mask = np.zeros((height,width), np.uint8)
-        cv2.rectangle(mask, 
-            (int(bb[0][coord_id][0]), int(bb[0][coord_id][1])),
-            (int(bb[1][coord_id][0]), int(bb[1][coord_id][1])),
-            255, thickness=-1)
+            frame = cv2.bitwise_and(frame, frame, mask=mask)
 
-        frame = cv2.bitwise_and(frame, frame, mask=mask)
+            # plt.scatter(int(world_traj[coord_id][1]), int(world_traj[coord_id][2]), 2, 'g')
+            # plt.pause(0.001)
 
-        # plt.scatter(int(world_traj[coord_id][1]), int(world_traj[coord_id][2]), 2, 'g')
-        # plt.pause(0.001)
+            # adding sensor reference
+            # for point in sensor_points:
+                # cv2.circle(frame, (int(point[0]), int(point[1])), 3, (0,0,255), -1) 
+            
+            masked_video.write(frame)
+            
+            resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
-        # adding sensor reference
-        for point in sensor_points:
-            cv2.circle(frame, (int(point[0]), int(point[1])), 3, (0,0,255), -1) 
-        
-        resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
+            # display the resulting frame
+            # cv2.imshow('frame', resized_frame)
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
+            frame_id += 1
+        # When everything done, release the capture
+        dyad_cap.release()
+        masked_video.release()
 
-        # display the resulting frame
-        cv2.imshow('frame', resized_frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        frame_id += 1
-    # When everything done, release the capture
-    dyad_cap.release()
-    cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main(sys.argv[:1]) # first arg is script name
