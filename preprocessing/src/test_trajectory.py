@@ -143,34 +143,28 @@ def main(argv):
     video_beginning = datetime.datetime(2010, 10, 6, 0, 0, 0) + datetime.timedelta(seconds=beginning)
 
     # definition of reference times
-    video_time_ref = datetime.datetime(2010, 10, 6, 0, 0, 8) # when the computer is shown in the video
-    absolute_time_ref = datetime.datetime(2010, 10, 6, 10, 40, 48) # time displayed on the computer
+    video_time_ref = datetime.datetime(2010, 10, 6, 0, 0, 13) # when the computer is shown in the video
+    absolute_time_ref = datetime.datetime(2010, 10, 6, 10, 40, 52) # time displayed on the computer
     delta_time = video_time_ref - absolute_time_ref
 
     
-    # parse annotation to find all dyads
-    dyads = [] # list of couple of ids for each dyad
+    ids = [] 
 
     with open("./annotations/" + folder + "/ground_truth.csv") as f:
-            for line in f:
-                data = list(map(float, line.split(";")))
-                if data[1] == 2 and (int(data[2]), int(data[0])) not in dyads:
-                    # if 2 people in the group and the dyad not already in the list
-                    dyads.append((int(data[0]), int(data[2])))
+        for line in f:
+            data = list(map(float, line.split(";")))
+            ids.append(int(data[0]))
 
 
-    # trajectory for one individual in each dyad
-    dyads_trajectories = {}
+    # trajectories
+    trajectories = {}
 
     # extraction of one trajectory for each dyad
-    for dyad in dyads:
-        file_trajectory_1 = "./trajectories/" + folder + "/crowd/path_" + str(dyad[0]) + ".csv"
-        file_trajectory_2 = "./trajectories/" + folder + "/crowd/path_" + str(dyad[1]) + ".csv"
-        t_1, x_1, y_1 = parse_trajectory(file_trajectory_1, delta_time, video_beginning)
-        t_2, x_2, y_2 = parse_trajectory(file_trajectory_2, delta_time, video_beginning)
-        if t_1[0] > 0 and t_1[0] < ending: # only keeping trajectory from the input video
-            middle_traj = compute_middle_trajectory(t_1, x_1, y_1, t_2, x_2, y_2)
-            dyads_trajectories[dyad[0]] = middle_traj
+    for pid in ids:
+        file_traj = "./trajectories/" + folder + "/crowd/path_" + str(pid) + ".csv"
+        t, x, y = parse_trajectory(file_traj, delta_time, video_beginning)
+        if t[0] > 0 and t[0] < ending: # only keeping trajectory from the input video
+            trajectories[pid] = [[t[i], x[i], y[i]] for i in range(len(x))]
             # plotting the trajectories on a 2D plan
             # plt.plot(x_1, y_1)
             # plt.plot(x_2, y_2)
@@ -250,20 +244,11 @@ def main(argv):
 
     valid_trajectories = {} # trajectories consistent with the input video
 
-    for pedestrian_id, trajectory in dyads_trajectories.items():
-        trajectory = find_acceptable_portion(trajectory)
+    for pedestrian_id, trajectory in trajectories.items():
         if len(trajectory) != 0:
             t_init = trajectory[0][0]
             if t_init < video_duration:
-                t_final = trajectory[-1][0]
-                if t_final - t_init > 2.0: # clip last more than 2sec
-                    subvideo_path = 'videos/' + folder + '/' + video_id + '/dyads/' + str(pedestrian_id) + '.avi'
-                    subvideo_times[pedestrian_id] = (t_init, t_final)
-                    for j in range(len(trajectory)):
-                        # change time relatively to the sub_video
-                        trajectory[j][0] = trajectory[j][0] - t_init
-                    valid_trajectories[pedestrian_id] = trajectory
-                    ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
+                valid_trajectories[pedestrian_id] = trajectory
                 
     
 
@@ -314,7 +299,7 @@ def main(argv):
 
     for pedestrian_id in image_trajectories:
         traj = image_trajectories[pedestrian_id]
-        world_traj = dyads_trajectories[pedestrian_id]
+        world_traj = trajectories[pedestrian_id]
         bb = bbs[pedestrian_id]
     
         # compute projection of the sensor references
@@ -328,35 +313,36 @@ def main(argv):
         frame_id = 0
         coord_id = 0
 
-        fps = 29.97
-        video_folder = './videos/' + folder + '/' + video_id + '/dyads/' 
-        dyad_cap = cv2.VideoCapture(video_folder + str(pedestrian_id) + '.avi')
-        masked_video = cv2.VideoWriter(
-            video_folder + str(pedestrian_id) + '_masked.avi',
-            -1, fps, (width, height)
-        )        
+        cap = cv2.VideoCapture(args.video)
+
+        t_0 = traj[0][0]
+        cap.set(cv2.CAP_PROP_POS_MSEC, t_0 * 1000) 
+
+        fps = cap.get(5)
+
         while(True):
             # capture frame-by-frame
-            ret, frame = dyad_cap.read()
+            ret, frame = cap.read()
             if not type(frame) is np.ndarray:
                 break
-            frame_time = frame_id / fps
+            frame_time = frame_id / fps + t_0
+            if coord_id + 1 >= len(traj):
+                break
             if traj[coord_id + 1][0] < frame_time:
                 coord_id += 1
 
             # print(frame_time, traj[coord_id][0])
 
             # adding trajectory point
-            # cv2.circle(frame, (int(traj[coord_id][1]), int(traj[coord_id][2])), 10, (0,255,0), -1)
+            circle_i = min(height, max(0, int(traj[coord_id][1])))
+            circle_j = min(width, max(0, int(traj[coord_id][2])))
+            cv2.circle(frame, (circle_i, circle_j), 10, (0,255,0), -1)
 
-            mask = np.zeros((height,width), np.uint8)
-            cv2.rectangle(mask, 
-                (int(bb[0][coord_id][0]), int(bb[0][coord_id][1])),
-                (int(bb[1][coord_id][0]), int(bb[1][coord_id][1])),
-                255, thickness=-1)
+            # cv2.rectangle(frame, 
+            #     (int(bb[0][coord_id][0]), int(bb[0][coord_id][1])),
+            #     (int(bb[1][coord_id][0]), int(bb[1][coord_id][1])),
+            #     255, thickness=2)
             # print(mask.shape)
-
-            frame = cv2.bitwise_and(frame, frame, mask=mask)
 
             # plt.scatter(int(world_traj[coord_id][1]), int(world_traj[coord_id][2]), 2, 'g')
             # plt.pause(0.001)
@@ -364,19 +350,16 @@ def main(argv):
             # adding sensor reference
             # for point in sensor_points:
                 # cv2.circle(frame, (int(point[0]), int(point[1])), 3, (0,0,255), -1) 
-            
-            masked_video.write(frame)
-            
+                        
             resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
             # display the resulting frame
-            # cv2.imshow('frame', resized_frame)
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
+            cv2.imshow('frame', resized_frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
             frame_id += 1
         # When everything done, release the capture
-        dyad_cap.release()
-        masked_video.release()
+        cap.release()
 
         cv2.destroyAllWindows()
 
