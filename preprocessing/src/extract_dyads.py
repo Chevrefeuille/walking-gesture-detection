@@ -235,7 +235,7 @@ def main(argv):
         [0, 0, 1]
     ])
 
-    retval, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
+    _, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
         [calibration_world_coordinates], [calibration_image_coordinates],
         (width, height), camera_matrix, None, flags=cv2.CALIB_USE_INTRINSIC_GUESS
     )
@@ -243,7 +243,7 @@ def main(argv):
     # split the video into corresponding sub-videos
     subvideo_times = {} # contains ref for start time and stop time
 
-    valid_trajectories = {}
+    valid_trajectories = {} # trajectories consistent with the input video
 
     for pedestrian_id, trajectory in dyads_trajectories.items():
         trajectory = find_acceptable_portion(trajectory)
@@ -251,18 +251,18 @@ def main(argv):
             t_init = trajectory[0][0]
             if t_init < video_duration:
                 t_final = trajectory[-1][0]
-                subvideo_path = 'videos/' + folder + '/' + video_id + '/dyads/' + str(pedestrian_id) + '.avi'
-                subvideo_times[pedestrian_id] = (t_init, t_final)
-                for j in range(len(trajectory)):
-                    # change time relatively to the sub_video
-                    trajectory[j][0] = trajectory[j][0] - t_init
-                valid_trajectories[pedestrian_id] = trajectory
-                # crop_video()
-                ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
+                if t_final - t_init > 2.0: # clip last more than 2sec
+                    subvideo_path = 'videos/' + folder + '/' + video_id + '/dyads/' + str(pedestrian_id) + '.avi'
+                    subvideo_times[pedestrian_id] = (t_init, t_final)
+                    for j in range(len(trajectory)):
+                        # change time relatively to the sub_video
+                        trajectory[j][0] = trajectory[j][0] - t_init
+                    valid_trajectories[pedestrian_id] = trajectory
+                    ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
                 
     
 
-    # compute image trajectory using the homography matrix
+    # compute image trajectory and boundind boxes using the homography matrix
     image_trajectories = {}
     bbs = {}
     for pedestrian_id, traj in valid_trajectories.items():
@@ -273,7 +273,6 @@ def main(argv):
             world_bl_bb.append([x, y - 1100, 0.0])
             world_tr_bb.append([x, y + 1100, 2500])
             time_list.append(t)
-        
         # plot world trajectory and coordinates of the sensors
         # plt.plot([tr[0] for tr in world_traj], [tr[1] for tr in world_traj])
         # plt.plot([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates], 'o')
@@ -283,18 +282,22 @@ def main(argv):
         #     np.array(world_traj), rvecs[0], tvecs[0], 
         #     camera_matrix, dist_coeffs
         # )
+
+        # middle point
         world_traj = np.array(world_traj, dtype=np.float32)
         image_traj = cv2.projectPoints(
             world_traj,
             rvecs[0], tvecs[0], camera_matrix, dist_coeffs)[0]
         image_traj = [i[0].tolist() for i in image_traj]
 
+        # bottom left corner of the bounding box
         world_bl_bb = np.array(world_bl_bb, dtype=np.float32)
         image_bl_bb = cv2.projectPoints(
             world_bl_bb,
             rvecs[0], tvecs[0], camera_matrix, dist_coeffs)[0]
         image_bl_bb = [i[0].tolist() for i in image_bl_bb]
 
+        # top right corner of the bounding box
         world_tr_bb = np.array(world_tr_bb, dtype=np.float32)
         image_tr_bb = cv2.projectPoints(
             world_tr_bb,
@@ -308,19 +311,15 @@ def main(argv):
         traj = image_trajectories[pedestrian_id]
         world_traj = dyads_trajectories[pedestrian_id]
         bb = bbs[pedestrian_id]
-        # for t, _, _ in traj:
-        #     print(t)
-
+    
         # compute projection of the sensor references
         # sensor_points, jacobian = cv2.projectPoints(
         #     calibration_test_coordinates,
         #     rvecs[0], tvecs[0], camera_matrix, dist_coeffs)
         # sensor_points = [s[0].tolist() for s in sensor_points]
-
         # # plt.ion()
         # # plt.scatter([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates])
 
-        # read the video
         frame_id = 0
         coord_id = 0
 
@@ -330,9 +329,7 @@ def main(argv):
         masked_video = cv2.VideoWriter(
             video_folder + str(pedestrian_id) + '_masked.avi',
             -1, fps, (width, height)
-        )
-        # dyad_cap = cv2.VideoCapture('./videos/2010_10_06/00002/00002.avi')
-        
+        )        
         while(True):
             # capture frame-by-frame
             ret, frame = dyad_cap.read()

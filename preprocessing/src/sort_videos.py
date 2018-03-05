@@ -28,16 +28,17 @@ if __name__ == "__main__":
             dp = Path(dyads_folder)
             for v_path in dp.glob('dyads/*.avi'): # each subvideo
                 video_path = str(v_path)
-                pedestrian_id = int((video_path.split('/')[-1]).split('.')[0])
-                gestures = find_class(pedestrian_id, folder)
-                no_gesture = True
-                for i in range(4):
-                    if gestures[i]:
-                        no_gesture = False
-                        dest_path = 'videos/dyads/gestures/' + gesture_map[i] + '/' + str(pedestrian_id) + '.avi'
+                if "masked" in video_path:
+                    pedestrian_id = int(((video_path.split('/')[-1]).split('.')[0]).split('_')[0])
+                    gestures = find_class(pedestrian_id, folder)
+                    no_gesture = True
+                    for i in range(4):
+                        if gestures[i]:
+                            no_gesture = False
+                            dest_path = 'videos/dyads/gestures/' + gesture_map[i] + '/' + str(pedestrian_id) + '.avi'
+                            copyfile(video_path, dest_path)
+                    if no_gesture:
+                        dest_path = 'videos/dyads/no_gestures/' + str(pedestrian_id) + '.avi'
                         copyfile(video_path, dest_path)
-                if no_gesture:
-                    dest_path = 'videos/dyads/no_gestures/' + str(pedestrian_id) + '.avi'
-                    copyfile(video_path, dest_path)
                         
 
