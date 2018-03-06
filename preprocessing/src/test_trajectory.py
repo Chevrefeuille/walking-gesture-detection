@@ -3,6 +3,8 @@ import argparse
 import subprocess as sp
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 import datetime
 
 import cv2
@@ -10,6 +12,30 @@ import numpy as np
 
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
+
+def fetch_time_ref(vid, folder):
+    """
+    Fetch the time references for the video.
+        input: 
+            vid: the id of the video
+            folder: the folder (date) containing the video
+        output: 
+            v: a video datetime
+            w: a wordl datetime
+    """
+    ref_file = folder + '/time_references.dat'
+    begining, video_duration = 0, 0
+    v, w = None, None
+    with open(ref_file, 'r') as f:
+        for line in f.readlines():
+            line_vid, video_time, ms, world_time = line.split()
+            if line_vid == vid:
+                t1 = list(map(int, video_time.split(",")))
+                t2 = list(map(int, world_time.split(",")))
+                v = datetime.datetime(t1[0], t1[1], t1[2], t1[3], t1[4], t1[5])
+                v += datetime.timedelta(milliseconds=int(ms))
+                w = datetime.datetime(t2[0], t2[1], t2[2], t2[3], t2[4], t2[5])
+    return v, w
 
 def find_video_reference_time(vid, folder):
     """
@@ -143,10 +169,9 @@ def main(argv):
     video_beginning = datetime.datetime(2010, 10, 6, 0, 0, 0) + datetime.timedelta(seconds=beginning)
 
     # definition of reference times
-    video_time_ref = datetime.datetime(2010, 10, 6, 0, 0, 13) # when the computer is shown in the video
-    absolute_time_ref = datetime.datetime(2010, 10, 6, 10, 40, 52) # time displayed on the computer
-    delta_time = video_time_ref - absolute_time_ref
+    video_time_ref, absolute_time_ref = fetch_time_ref(video_id, "videos/" + folder)
 
+    delta_time = video_time_ref - absolute_time_ref
     
     ids = [] 
 
@@ -239,8 +264,6 @@ def main(argv):
         (width, height), camera_matrix, None, flags=cv2.CALIB_USE_INTRINSIC_GUESS
     )
 
-    # split the video into corresponding sub-videos
-    subvideo_times = {} # contains ref for start time and stop time
 
     valid_trajectories = {} # trajectories consistent with the input video
 
@@ -251,21 +274,26 @@ def main(argv):
                 valid_trajectories[pedestrian_id] = trajectory
                 
     
-
     # compute image trajectory and boundind boxes using the homography matrix
     image_trajectories = {}
+    image_trajectories2 = {}
     bbs = {}
     for pedestrian_id, traj in valid_trajectories.items():
         world_traj, world_bl_bb, world_tr_bb = [], [], []
+        world_traj2 = []
         time_list = []
         for t, x, y in traj:
             world_traj.append([x, y, compute_z_coordinate(x, y)])
-            world_bl_bb.append([x, y - 1100, 0.0])
-            world_tr_bb.append([x, y + 1100, 2500])
+            world_traj2.append([x, y, 0])
+            world_bl_bb.append([x, y - 400, compute_z_coordinate(x, y)])
+            world_tr_bb.append([x, y + 400, compute_z_coordinate(x, y) + 2000])
             time_list.append(t)
+
         # plot world trajectory and coordinates of the sensors
-        # plt.plot([tr[0] for tr in world_traj], [tr[1] for tr in world_traj])
-        # plt.plot([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates], 'o')
+        # fig = plt.figure()
+        # ax = Axes3D(fig)
+        # ax.scatter([tr[0] for tr in world_traj], [tr[1] for tr in world_traj], [tr[2] for tr in world_traj])
+        # # plt.plot([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates], 'o')
         # plt.show()
 
         # image_traj, _ = cv2.projectPoints(
@@ -279,6 +307,12 @@ def main(argv):
             world_traj,
             rvecs[0], tvecs[0], camera_matrix, dist_coeffs)[0]
         image_traj = [i[0].tolist() for i in image_traj]
+
+        world_traj2 = np.array(world_traj2, dtype=np.float32)
+        image_traj2 = cv2.projectPoints(
+            world_traj2,
+            rvecs[0], tvecs[0], camera_matrix, dist_coeffs)[0]
+        image_traj2 = [i[0].tolist() for i in image_traj2]
 
         # bottom left corner of the bounding box
         world_bl_bb = np.array(world_bl_bb, dtype=np.float32)
@@ -295,10 +329,12 @@ def main(argv):
         image_tr_bb = [i[0].tolist() for i in image_tr_bb]
         
         image_trajectories[pedestrian_id] = [[time_list[i]] + image_traj[i] for i in range(len(image_traj))]
+        image_trajectories2[pedestrian_id] = [[time_list[i]] + image_traj2[i] for i in range(len(image_traj2))]
         bbs[pedestrian_id] = [image_bl_bb, image_tr_bb]
 
     for pedestrian_id in image_trajectories:
         traj = image_trajectories[pedestrian_id]
+        traj2 = image_trajectories2[pedestrian_id]
         world_traj = trajectories[pedestrian_id]
         bb = bbs[pedestrian_id]
     
@@ -334,15 +370,26 @@ def main(argv):
             # print(frame_time, traj[coord_id][0])
 
             # adding trajectory point
-            circle_i = min(height, max(0, int(traj[coord_id][1])))
-            circle_j = min(width, max(0, int(traj[coord_id][2])))
-            cv2.circle(frame, (circle_i, circle_j), 10, (0,255,0), -1)
+            # for coord in traj:
+            #     circle_i = min(width, max(0, int(coord[1])))
+            #     circle_j = min(height, max(0, int(coord[2])))
+            #     cv2.circle(frame, (circle_i, circle_j), 1, (0,255,0), -1)
+    
 
-            # cv2.rectangle(frame, 
-            #     (int(bb[0][coord_id][0]), int(bb[0][coord_id][1])),
-            #     (int(bb[1][coord_id][0]), int(bb[1][coord_id][1])),
-            #     255, thickness=2)
-            # print(mask.shape)
+            # for i in range(len(bb[0])):
+            x1 = min(width, max(0, int(bb[0][coord_id][0])))
+            y1 = min(width, max(0, int(bb[0][coord_id][1])))
+            x2 = min(width, max(0, int(bb[1][coord_id][0])))
+            y2 = min(width, max(0, int(bb[1][coord_id][1])))
+            cv2.rectangle(frame, 
+                (x1, y1), (x2, y2),
+                255, thickness=1)
+
+            circle_i = min(width, max(0, int(traj[coord_id][1])))
+            circle_j = min(height, max(0, int(traj[coord_id][2])))
+            cv2.circle(frame, (circle_i, circle_j), 5, (0,0,255), -1)
+
+            
 
             # plt.scatter(int(world_traj[coord_id][1]), int(world_traj[coord_id][2]), 2, 'g')
             # plt.pause(0.001)
