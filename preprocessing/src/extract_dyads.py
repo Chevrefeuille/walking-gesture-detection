@@ -112,21 +112,6 @@ def find_acceptable_portion(trajectory):
                 acceptable_portion.append(trajectory[i])
     return acceptable_portion
 
-def compute_z_coordinate(x, y):
-    """
-    Compute the z coordinate according to the estimated map of the corridor
-        input: x, y coordinates
-        output: z coordinates
-    """
-    slope = 400 / (35500 - 26000)
-    b = - slope * 26000
-    if x < 26000:
-        return 0
-    elif x > 35500:
-        return 400
-    else:
-        return slope * x + b
-
 def main(argv):
     height, width = 1080, 1920
     parser = argparse.ArgumentParser(description='Extract dyads video from a video.')
@@ -274,7 +259,7 @@ def main(argv):
         world_traj, world_bl_bb, world_tr_bb = [], [], []
         time_list = []
         for t, x, y in traj:
-            world_traj.append([x, y, compute_z_coordinate(x, y)])
+            world_traj.append([x, y, 0])
             world_bl_bb.append([x, y - 1100, 0.0])
             world_tr_bb.append([x, y + 1100, 2500])
             time_list.append(t)
