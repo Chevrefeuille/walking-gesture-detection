@@ -1,8 +1,8 @@
 .DS_Store
 
-preprocessing/videos/
 preprocessing/images/
 preprocessing/trajectories/
 preprocessing/annotations/
 
 *.pdf
+*.avi
