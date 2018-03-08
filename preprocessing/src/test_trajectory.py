@@ -285,8 +285,8 @@ def main(argv):
         for t, x, y in traj:
             world_traj.append([x, y, compute_z_coordinate(x, y)])
             world_traj2.append([x, y, 0])
-            world_bl_bb.append([x, y - 400, compute_z_coordinate(x, y)])
-            world_tr_bb.append([x, y + 400, compute_z_coordinate(x, y) + 2000])
+            world_bl_bb.append([x, y - 800, compute_z_coordinate(x, y)] - 500)
+            world_tr_bb.append([x, y + 800, compute_z_coordinate(x, y) + 2500])
             time_list.append(t)
 
         # plot world trajectory and coordinates of the sensors
@@ -385,9 +385,9 @@ def main(argv):
                 (x1, y1), (x2, y2),
                 255, thickness=1)
 
-            circle_i = min(width, max(0, int(traj[coord_id][1])))
-            circle_j = min(height, max(0, int(traj[coord_id][2])))
-            cv2.circle(frame, (circle_i, circle_j), 5, (0,0,255), -1)
+            # circle_i = min(width, max(0, int(traj[coord_id][1])))
+            # circle_j = min(height, max(0, int(traj[coord_id][2])))
+            # cv2.circle(frame, (circle_i, circle_j), 5, (0,0,255), -1)
 
             
 

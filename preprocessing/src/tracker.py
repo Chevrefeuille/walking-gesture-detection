@@ -12,6 +12,29 @@ from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 from imutils.object_detection import non_max_suppression
 
+def fetch_time_ref(vid, folder):
+    """
+    Fetch the time references for the video.
+        input: 
+            vid: the id of the video
+            folder: the folder (date) containing the video
+        output: 
+            v: a video datetime
+            w: a wordl datetime
+    """
+    ref_file = folder + '/time_references.dat'
+    begining, video_duration = 0, 0
+    v, w = None, None
+    with open(ref_file, 'r') as f:
+        for line in f.readlines():
+            line_vid, video_time, ms, world_time = line.split()
+            if line_vid == vid:
+                t1 = list(map(int, video_time.split(",")))
+                t2 = list(map(int, world_time.split(",")))
+                v = datetime.datetime(t1[0], t1[1], t1[2], t1[3], t1[4], t1[5])
+                v += datetime.timedelta(milliseconds=int(ms))
+                w = datetime.datetime(t2[0], t2[1], t2[2], t2[3], t2[4], t2[5])
+    return v, w
 
 def find_video_reference_time(vid, folder):
     """
@@ -131,6 +154,46 @@ def find_intersecting_rois(rois, tracker):
             pick.append(roi)
     return pick
 
+def find_two_closest_rois(rois, tracker):
+    """
+    Filter pedestrian detections to keep only the ones consistent with the trajectory
+        input:
+            rois: the list of detected rois
+            tracker: the point representing the trajectory of the dyad
+        output: the two rois closest to the tracker
+    """
+    pick = []
+    distances = {}
+    xt, yt = tracker
+    for roi in rois:
+        x1, y1, x2, y2 = roi
+        xm, ym = (x1 + x2)/2, (y1 + y2)/2
+        delta_x = abs(xm - xt)
+        if delta_x > 10: # to get rid of in between pedestrian
+            dist = ((xm - xt)**2 + (ym - yt)**2 )**(1/2)
+            distances[dist] = roi
+    sorted_distances = sorted(distances)
+    if len(sorted_distances) >= 2:
+        return distances[sorted_distances[0]], distances[sorted_distances[1]]
+    else:
+        return False
+    # return pick
+
+def compute_z_coordinate(x, y):
+    """
+    Compute the z coordinate according to the estimated map of the corridor
+        input: x, y coordinates
+        output: z coordinates
+    """
+    slope = 400 / (35500 - 26000)
+    b = - slope * 26000
+    if x < 26000:
+        return 0
+    elif x > 35500:
+        return 400
+    else:
+        return slope * x + b
+
 
 def main(argv):
     height, width = 1080, 1920
@@ -148,8 +211,8 @@ def main(argv):
     video_beginning = datetime.datetime(2010, 10, 6, 0, 0, 0) + datetime.timedelta(seconds=beginning)
 
     # definition of reference times
-    video_time_ref = datetime.datetime(2010, 10, 6, 0, 0, 8) # when the computer is shown in the video
-    absolute_time_ref = datetime.datetime(2010, 10, 6, 10, 40, 48) # time displayed on the computer
+    video_time_ref, absolute_time_ref = fetch_time_ref(video_id, "videos/" + folder)
+
     delta_time = video_time_ref - absolute_time_ref
 
     
@@ -260,16 +323,7 @@ def main(argv):
         if len(trajectory) != 0:
             t_init = trajectory[0][0]
             if t_init < video_duration:
-                t_final = trajectory[-1][0]
-                if t_final - t_init > 2.0: # clip last more than 2sec
-                    subvideo_path = 'videos/' + folder + '/' + video_id + '/dyads/' + str(pedestrian_id) + '.avi'
-                    subvideo_times[pedestrian_id] = (t_init, t_final)
-                    for j in range(len(trajectory)):
-                        # change time relatively to the sub_video
-                        trajectory[j][0] = trajectory[j][0] - t_init
-                    valid_trajectories[pedestrian_id] = trajectory
-                    ffmpeg_extract_subclip(args.video, t_init, t_final, subvideo_path)
-                
+                valid_trajectories[pedestrian_id] = trajectory                
     
 
     # compute image trajectory and boundind boxes using the homography matrix
@@ -279,9 +333,9 @@ def main(argv):
         world_traj, world_bl_bb, world_tr_bb = [], [], []
         time_list = []
         for t, x, y in traj:
-            world_traj.append([x, y, 0])
-            world_bl_bb.append([x, y - 50, 80])
-            world_tr_bb.append([x, y + 50, -20])
+            world_traj.append([x, y, compute_z_coordinate(x, y) + 1000])
+            world_bl_bb.append([x, y - 1200, compute_z_coordinate(x, y) - 200])
+            world_tr_bb.append([x, y + 1200, compute_z_coordinate(x, y) + 2200])
             time_list.append(t)
         # plot world trajectory and coordinates of the sensors
         # plt.plot([tr[0] for tr in world_traj], [tr[1] for tr in world_traj])
@@ -319,7 +373,7 @@ def main(argv):
 
     # initialize the HOG descriptor/person detector
     hog = cv2.HOGDescriptor()
-    hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())    
+    hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
     for pedestrian_id in image_trajectories:
         traj = image_trajectories[pedestrian_id]
@@ -337,27 +391,36 @@ def main(argv):
         frame_id = 0
         coord_id = 0
 
-        fps = 29.97
         video_folder = './videos/' + folder + '/' + video_id + '/dyads/' 
-        dyad_cap = cv2.VideoCapture(video_folder + str(pedestrian_id) + '.avi')
+        dyad_cap = cv2.VideoCapture(args.video)
+
+        t_0 = traj[0][0]
+        dyad_cap.set(cv2.CAP_PROP_POS_MSEC, t_0 * 1000) 
+
+        fps = dyad_cap.get(5)
+
         masked_video = cv2.VideoWriter(
-            video_folder + str(pedestrian_id) + '_masked.avi',
-            -1, fps, (int(width / 2), int(height / 2))
+            video_folder + str(pedestrian_id) + '.avi',
+            -1, fps, (width, height)
         )        
         while(True):
             # capture frame-by-frame
             ret, frame = dyad_cap.read()
             if not type(frame) is np.ndarray:
                 break
-            frame_time = frame_id / fps
+
+            frame_time = frame_id / fps + t_0
+            if coord_id + 1 >= len(traj):
+                break               
             if traj[coord_id + 1][0] < frame_time:
                 coord_id += 1
 
             # print(frame_time, traj[coord_id][0])
 
             # adding trajectory point
-            # cv2.circle(frame, (int(traj[coord_id][1]), int(traj[coord_id][2])), 10, (0,255,0), -1)
-
+            circle_i = min(width, max(0, int(traj[coord_id][1])))
+            circle_j = min(height, max(0, int(traj[coord_id][2])))
+            # cv2.circle(frame, (circle_i, circle_j), 5, (0,0,255), -1)
 
             # plt.scatter(int(world_traj[coord_id][1]), int(world_traj[coord_id][2]), 2, 'g')
             # plt.pause(0.001)
@@ -368,30 +431,41 @@ def main(argv):
             
             # masked_video.write(frame)
         
-            resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
+            # resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
-            # detect people in the image
-            (rects, weights) = hog.detectMultiScale(resized_frame, winStride=(4, 4),
-                padding=(8, 8), scale=1.05)
+            mask = np.zeros((height, width), np.uint8)
+
+            x1 = min(width, max(0, int(bb[0][coord_id][0])))
+            y1 = min(width, max(0, int(bb[0][coord_id][1])))
+            x2 = min(width, max(0, int(bb[1][coord_id][0])))
+            y2 = min(width, max(0, int(bb[1][coord_id][1])))
+
+            cv2.rectangle(mask, (x1, y1), (x2, y2), 255, thickness=-1)
+
+            frame = cv2.bitwise_and(frame, frame, mask=mask)
+
+            # resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
+
+            # # detect people in the image
+            # (rects, weights) = hog.detectMultiScale(resized_frame, winStride=(4, 4),
+            #     padding=(8, 8), scale=1.05)
         
-            # apply non-maxima suppression to the bounding boxes using a
-            # fairly large overlap threshold to try to maintain overlapping
-            # boxes that are still people
-            rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in rects])
-            nms = non_max_suppression(rects, probs=None, overlapThresh=0.65)
-            pick = find_intersecting_rois(nms, [
-                int(bb[0][coord_id][0])/2, int(bb[0][coord_id][1])/2,
-                int(bb[1][coord_id][0])/2, int(bb[1][coord_id][1])/2
-            ])
+            # # apply non-maxima suppression to the bounding boxes using a
+            # # fairly large overlap threshold to try to maintain overlapping
+            # # boxes that are still people
+            # rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in rects])
+            # nms = non_max_suppression(rects, probs=None, overlapThresh=0.65)
+            # pick = find_two_closest_rois(nms, (circle_i/2, circle_j/2))
+            # if pick:
+            #     mask2 = np.zeros((height, width), np.uint8)
+            #     mask2 = cv2.resize(mask2, dsize=(0, 0), fx=1/2, fy=1/2)
 
-            mask = np.zeros((height,width), np.uint8)
-            mask = cv2.resize(mask, dsize=(0, 0), fx=1/2, fy=1/2)
-        
-            for (xA, yA, xB, yB) in pick:
-                cv2.rectangle(mask, (xA, yA), (xB, yB), (255, 255, 255), -2)
-            resized_frame = cv2.bitwise_and(resized_frame, resized_frame, mask=mask)
+            #     for (xA, yA, xB, yB) in pick:
+            #         cv2.rectangle(mask2, (xA, yA), (xB, yB), (255, 0, 0), -1)
+                
+            #     resized_frame = cv2.bitwise_and(resized_frame, resized_frame, mask=mask2)
 
-            masked_video.write(resized_frame)
+            masked_video.write(frame)
 
             # display the resulting frame
             # cv2.imshow('frame', resized_frame)
