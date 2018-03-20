@@ -20,7 +20,7 @@
 %\shabox{}
 
 
-% --- Logo Atos ---
+% --- Logo ---
 %\makebox[\textwidth][l]{
 %\raisebox{-15pt}[0pt][0pt]{
 %\hspace{2.5cm}
@@ -40,12 +40,12 @@
 \begin{center}
 \makebox[\textwidth][l]{
 \raisebox{-8pt}[0pt][0pt]{
-\includegraphics[scale=0.18]{Images/logo_entreprise}
+\includegraphics[scale=0.18]{images/logo_entreprise}
 }
 }
 \makebox[\textwidth][r]{
 \raisebox{0pt}[0pt][0pt]{
-\includegraphics[scale=0.2]{Images/logo_ensimag}
+\includegraphics[scale=0.2]{images/logo_ensimag}
 }
 }
 Grenoble INP  -- Ensimag\\
@@ -103,8 +103,9 @@ Camera calibration: in order to be able to map the trajectories to the video to 
 
 Bounding box: to compute the actual portion of the screen that contains the walking dyad, a bounding box has been mapped from the real world to the image plan, using the camera matrix computed with the calibration. In the world coordinates, the bounding box is 3 meters wide and 2 meters high so that it surround the two pedestrian. This bounding box is then used as a mask to remove uninteresting information.
 
+\subsection{Pose estimation}
+The pose estimation process is run using the OpenPose library which is publicly available. The algorithm used is based on body parts inference to represents joints that are then linked together.
 
-
-
-
+\subsection{Action recognition}
+I plan on using machine learning algorithms to classify the video clips. The st-gcn repository provides an neural network trained to classify skeleton pose flows into multiple action class.
 \end{document}
