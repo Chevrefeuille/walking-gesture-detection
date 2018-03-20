@@ -399,19 +399,24 @@ def main(argv):
 
         fps = dyad_cap.get(5)
 
+        fourcc = cv2.VideoWriter_fourcc(*'DIVX')
         masked_video = cv2.VideoWriter(
             video_folder + str(pedestrian_id) + '.avi',
-            -1, fps, (width, height)
+            fourcc, 30, (340, 256)
         )        
-        while(True):
+        # while(True):
+        for _ in range(300): # keeping 300 frames for st-gcn
+
             # capture frame-by-frame
             ret, frame = dyad_cap.read()
-            if not type(frame) is np.ndarray:
-                break
 
             frame_time = frame_id / fps + t_0
-            if coord_id + 1 >= len(traj):
-                break               
+
+            if not type(frame) is np.ndarray or coord_id + 1 >= len(traj): # back to start of video
+                dyad_cap.set(cv2.CAP_PROP_POS_MSEC, t_0 * 1000)
+                frame_id, coord_id = 0, 0
+                frame_time = t_0
+          
             if traj[coord_id + 1][0] < frame_time:
                 coord_id += 1
 
@@ -465,10 +470,12 @@ def main(argv):
                 
             #     resized_frame = cv2.bitwise_and(resized_frame, resized_frame, mask=mask2)
 
+            frame = cv2.resize(frame, dsize=(340, 256))
+
             masked_video.write(frame)
 
             # display the resulting frame
-            # cv2.imshow('frame', resized_frame)
+            # cv2.imshow('frame', frame)
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     break
             frame_id += 1
