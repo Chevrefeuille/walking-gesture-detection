@@ -1,8 +1,15 @@
 .DS_Store
+.vscode
 
 preprocessing/images/
 preprocessing/trajectories/
 preprocessing/annotations/
+
+report/tex_report/*.aux
+report/tex_report/*.fdb_latexmk
+report/tex_report/*.fls
+report/tex_report/*.log
+report/tex_report/*.synctex.gz
 
 *.pdf
 *.avi
