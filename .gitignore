@@ -13,3 +13,4 @@ report/tex_report/*.synctex.gz
 
 *.pdf
 *.avi
+*.json
