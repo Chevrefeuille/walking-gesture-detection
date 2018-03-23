@@ -11,6 +11,7 @@
 \usepackage{moreverb}
 \usepackage{listings}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 
 %\fbox{}
 %\shadowbox{}
@@ -77,13 +78,23 @@ Adrien Gregorj\\
 \end{center}
 \newpage
 
+\tableofcontents
 
+\newpage
 
 \section{Context}
 
-\section{Problematic}
+\subsection{Home structure}
+This internship takes places in an academic context. The home structure is the Graduate School of Natural Science and Technology of Okayama University. In particular the laboratory is part of the Division of Industrial Innovation Sciences, in the Department of Computer Science.
 
-Dr Zeynep Yücel has been working for a while on modeling crowd movements. The motivation behind constructing such models are numerous: testing architectural designs for an evacuation process, designing accurate crowd models for movies or video games, etc. Japan being very involved in the robotic industries, these projects guidance was to analyse comportements of pairs of pedestrian (dyads) to potentially develop robot able to walk along side with people in the most natural manner. In order to get real data that could be analysed and from which mathematical models could be derived, cameras and sensors were installed in an underground pedestrian zone. 
+Okayama University is a well ranked university in Japan located in Okayama Prefecture, in the Chūgoku region (westernmost region) of the main island of Honshū. The school was founded in 1870  and welcomes around 14000 students (10000 undergraduates, 3000 postgraduates and 1000 doctoral students). It's motto is \guillemotleft Creating and fostering higher knowledge and wisdom \guillemotright.
+
+The Graduate School of Natural Science and Technology was originally established in April 1987. It focuses on research in the fundamental sciences such as global climate change, plant photosynthesis or supernova neutrinos and the Division of Industrial Innovation Sciences especially works on applied engineering in the field of computer science, robotic, material sciences and more. 
+
+In the Department of Computer Science, the topics of research are the basic theory and application of information technology, artificial intelligence and computer technology. Examples of research projects includes the development of a visualization tool for a processor or human tracking  algorithm by means of attention control. Dr Akito Monden is the professor of the Theory of Programming and Artificial Intelligence where this internship takes place and Dr Zeynep Yücel is an assistant professor in the same laboratory.
+
+\section{Problematic}
+Dr Zeynep Yücel has been working for a while on modeling crowd movements \cite{Zanlungo2017}\cite{Yucel2013}\cite{Yucel2017}. The motivation behind constructing such models are numerous: testing architectural designs for an evacuation process, designing accurate crowd models for movies or video games, etc. Japan being very involved in the robotic industries, these projects guidance was to analyse comportements of pairs of pedestrian (dyads) to potentially develop robot able to walk along side with people in the most natural manner. In order to get real data that could be analysed and from which mathematical models could be derived, cameras and sensors were installed in an underground pedestrian zone. 
 
 Previous work \ref{??} has also shown that using trajectory informations, the composition of a group can be accurately determined. Detection of dyads can be performed relying on data from the sensors that represents the trajectories of the pedestrians.
 
@@ -91,21 +102,39 @@ The goal of this project is to develop a pipeline to automatize the classificati
 
 \section{Pipeline}
 
-The current pipeline that we wish to implement is 
+The current pipeline that we wish to implement is as described in this section.
 
 \subsection{Input data}
-This section described the initial data that is used when 
+This section described the initial data that is used along the pipeline.
+\begin{description}
+    \item[video files]: set of 15 minutes successive video files
+    \item[trajectory]: 
+\end{description}
 
 \subsection{Pre-processing}
-The raw videos from the camera need to be modified in order to be treated. Indeed, the relevant portions that can later be processed by the neural networks need to be selected. The first step is to retrieve all the dyads contained in the videos. This is done by using the annotations files and listing all the pedestrian that interacts with another one.
+The raw videos from the camera need to be modified in order to be treated. Indeed, the relevant portions that can later be processed by the neural networks need to be selected. The first step is to retrieve all the dyads contained in the videos. This is done by using the annotations files and listing all the pedestrian that interacts with one another.
 
 Camera calibration: in order to be able to map the trajectories to the video to find the appropriate portion to extract, the camera calibration matrix needs to be computed. This is done using OpenCV calibration tool box. 
 
 Bounding box: to compute the actual portion of the screen that contains the walking dyad, a bounding box has been mapped from the real world to the image plan, using the camera matrix computed with the calibration. In the world coordinates, the bounding box is 3 meters wide and 2 meters high so that it surround the two pedestrian. This bounding box is then used as a mask to remove uninteresting information.
 
 \subsection{Pose estimation}
-The pose estimation process is run using the OpenPose library which is publicly available. The algorithm used is based on body parts inference to represents joints that are then linked together.
+The pose estimation process is run using the OpenPose library which is publicly available. The algorithm used is based on body parts inference to identify joints in every frame \cite{Cao2016}.
 
 \subsection{Action recognition}
-I plan on using machine learning algorithms to classify the video clips. The st-gcn repository provides an neural network trained to classify skeleton pose flows into multiple action class.
+I plan on using machine learning algorithms to classify the video clips. The st-gcn repository provides an neural network trained to classify skeleton pose flows into multiple action class. The network was trained on the Kinetic 
+ that contains around 300,000 video clips covering 400 human action classes.
+
+\section{Societal and environmental impact}
+
+\subsection{Societal impact}
+Considering the broader applications of pedestrian modeling, the possibilities in the field of robotic have in mind to help developing solutions to help smoothen interaction between automaton and human in the context of pedestrian movements. This could be used in a variety of way, such as guide or assistantship for disabled and elderly. 
+
+\subsection{Environmental impact}
+Regarding the environment, the first part of the project was fulfilled on my personal laptop computer. It was mainly used in battery mode, being charged around two hours per day. According to its technical documentation, this represents a power consumption of approximately 300Wh/day. For the 21 weeks of the internship, this correspond to a total consumption of around 30kWh.
+The project will likely only take place in Okayama University laboratories. Except from the round trip from France to Japan, no further travels will be performed. Yet, this represents a substantial carbon footprint of 4t of CO2, almost twice the maximum amount that individuals should not exceed to prevent global warming. In terms of power consumption, this journey corresponds to more than 8000kWh, which is roughly equivalent to using 250 laptops. 
+
+\bibliography{pfe}{}
+\bibliographystyle{plain}
+
 \end{document}

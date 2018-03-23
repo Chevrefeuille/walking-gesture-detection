@@ -1,0 +1,50 @@
+This is BibTeX, Version 0.99d (TeX Live 2015/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: report.aux
+The style file: plain.bst
+Database file #1: pfe.bib
+Warning--empty journal in Cao2016
+Warning--empty journal in Zanlungo2017
+Warning--there's a number but no volume in Zanlungo2017
+You've used 4 entries,
+            2118 wiz_defined-function locations,
+            526 strings with 4847 characters,
+and the built_in function-call counts, 1687 in all, are:
+= -- 156
+> -- 110
+< -- 1
++ -- 41
+- -- 37
+* -- 138
+:= -- 291
+add.period$ -- 13
+call.type$ -- 4
+change.case$ -- 27
+chr.to.int$ -- 0
+cite$ -- 7
+duplicate$ -- 55
+empty$ -- 109
+format.name$ -- 37
+if$ -- 339
+int.to.chr$ -- 0
+int.to.str$ -- 4
+missing$ -- 4
+newline$ -- 23
+num.names$ -- 10
+pop$ -- 30
+preamble$ -- 1
+purify$ -- 23
+quote$ -- 0
+skip$ -- 37
+stack$ -- 0
+substring$ -- 93
+swap$ -- 11
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 16
+warning$ -- 3
+while$ -- 16
+width$ -- 5
+write$ -- 45
+(There were 3 warnings)

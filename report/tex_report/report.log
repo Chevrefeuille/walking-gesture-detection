@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2018.3.19)  20 MAR 2018 12:09
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2018.3.19)  23 MAR 2018 23:31
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -515,24 +515,31 @@ Now handling font encoding U ...
    defining Unicode char U+2026 (decimal 8230)
    defining Unicode char U+2122 (decimal 8482)
    defining Unicode char U+2423 (decimal 9251)
+))
+(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2005/09/27 v1.99g Standard LaTeX package
+
+(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def
+File: t1enc.def 2005/09/27 v1.99g Standard LaTeX file
+LaTeX Font Info:    Redeclaring font encoding T1 on input line 48.
 )) (./report.aux)
 \openout1 = `report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 36.
-LaTeX Font Info:    ... okay on input line 36.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 36.
-LaTeX Font Info:    ... okay on input line 36.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 36.
-LaTeX Font Info:    ... okay on input line 36.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 36.
-LaTeX Font Info:    ... okay on input line 36.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 36.
-LaTeX Font Info:    ... okay on input line 36.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 36.
-LaTeX Font Info:    ... okay on input line 36.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
 Package lastpage Info: Please have a look at the pageslts package at
 (lastpage)             https://www.ctan.org/pkg/pageslts
-(lastpage)             ! on input line 36.
+(lastpage)             ! on input line 37.
 
 (/usr/share/texlive/texmf-dist/tex/context/base/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -601,65 +608,73 @@ e
 File: images/logo_entreprise.pdf Graphic file (type pdf)
 
 <use images/logo_entreprise.pdf>
-Package pdftex.def Info: images/logo_entreprise.pdf used on input line 45.
+Package pdftex.def Info: images/logo_entreprise.pdf used on input line 46.
 (pdftex.def)             Requested size: 88.52692pt x 58.3555pt.
 
 <images/logo_ensimag.pdf, id=2, 474.77374pt x 303.1325pt>
 File: images/logo_ensimag.pdf Graphic file (type pdf)
 
 <use images/logo_ensimag.pdf>
-Package pdftex.def Info: images/logo_ensimag.pdf used on input line 50.
+Package pdftex.def Info: images/logo_ensimag.pdf used on input line 51.
 (pdftex.def)             Requested size: 94.95306pt x 60.62541pt.
-LaTeX Font Info:    Try loading font information for U+msa on input line 63.
+LaTeX Font Info:    Try loading font information for U+msa on input line 64.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 63.
+LaTeX Font Info:    Try loading font information for U+msb on input line 64.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Overfull \hbox (18.63324pt too wide) in paragraph at lines 64--64
+Overfull \hbox (18.63141pt too wide) in paragraph at lines 65--65
  [][] 
  []
 
 
-Overfull \hbox (132.33388pt too wide) in paragraph at lines 71--77
+Overfull \hbox (132.33388pt too wide) in paragraph at lines 72--78
  [][] 
  []
 
 [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} <./images/logo_entreprise.p
-df> <./images/logo_ensimag.pdf>]
+df> <./images/logo_ensimag.pdf>] (./report.toc)
+\tf@toc=\write4
+\openout4 = `report.toc'.
 
-LaTeX Warning: Reference `??' on page 2 undefined on input line 88.
+ [2]
 
-[2] 
+LaTeX Warning: Reference `??' on page 3 undefined on input line 99.
+
+[3] [4] (./report.bbl) 
 AED: lastpage setting LastPage
-[3] (./report.aux)
+[5] (./report.aux)
 
 LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 4512 strings out of 494924
- 59764 string characters out of 6179708
- 122031 words of memory out of 5000000
- 7718 multiletter control sequences out of 15000+600000
- 10753 words of font info for 40 fonts, out of 8000000 for 9000
+ 4737 strings out of 494924
+ 61490 string characters out of 6179708
+ 122115 words of memory out of 5000000
+ 7924 multiletter control sequences out of 15000+600000
+ 16725 words of font info for 43 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 38i,9n,43p,758b,226s stack positions out of 5000i,500n,10000p,200000b,80000s
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
-r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share
-/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texliv
-e/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf
--dist/fonts/type1/public/amsfonts/cm/cmsl12.pfb>
-Output written on report.pdf (3 pages, 151477 bytes).
+ 38i,8n,43p,816b,231s stack positions out of 5000i,500n,10000p,200000b,80000s
+ </home/chevrefeuille/.texmf-var/fonts/pk/ljfour/jknappen/ec/ecti1200.600pk> 
+</home/chevrefeuille/.texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1440.600pk> </h
+ome/chevrefeuille/.texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1728.600pk> </home
+/chevrefeuille/.texmf-var/fonts/pk/ljfour/jknappen/ec/ecsl1200.600pk> </home/ch
+evrefeuille/.texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm1000.600pk> </home/chevr
+efeuille/.texmf-var/fonts/pk/ljfour/jknappen/ec/ecbx1200.600pk> </home/chevrefe
+uille/.texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm2488.600pk> </home/chevrefeuil
+le/.texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm2074.600pk> </home/chevrefeuille/
+.texmf-var/fonts/pk/ljfour/jknappen/ec/ecrm1200.600pk>
+Output written on report.pdf (5 pages, 168345 bytes).
 PDF statistics:
- 61 PDF objects out of 1000 (max. 8388607)
- 40 compressed objects within 1 object stream
+ 328 PDF objects out of 1000 (max. 8388607)
+ 65 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  11 words of extra memory for PDF output out of 10000 (max. 10000000)
 

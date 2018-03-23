@@ -1,0 +1,29 @@
+\begin{thebibliography}{1}
+
+\bibitem{Cao2016}
+Zhe Cao, Tomas Simon, Shih-En Wei, and Yaser Sheikh.
+\newblock {Realtime Multi-Person 2D Pose Estimation using Part Affinity
+  Fields}.
+\newblock 2016.
+
+\bibitem{Yucel2013}
+Zeynep Y{\"{u}}cel, Francesco Zanlungo, Tetsushi Ikeda, Takahiro Miyashita, and
+  Norihiro Hagita.
+\newblock {Deciphering the crowd: Modeling and identification of pedestrian
+  group motion}.
+\newblock {\em Sensors (Switzerland)}, 13(1):875--897, 2013.
+
+\bibitem{Yucel2017}
+Zeynep Y{\"{u}}cel, Francesco Zanlungo, and Masahiro Shiomi.
+\newblock {Walk the Talk: Gestures in Mobile Interaction}.
+\newblock In Abderrahmane Kheddar, Eiichi Yoshida, Shuzhi~Sam Ge, Kenji Suzuki,
+  John-John Cabibihan, Friederike Eyssel, and Hongsheng He, editors, {\em
+  Social Robotics}, pages 220--230, Cham, 2017. Springer International
+  Publishing.
+
+\bibitem{Zanlungo2017}
+Francesco Zanlungo, Zeynep Yucel, and Takayuki Kanda.
+\newblock {The effect of social roles on group behaviour}.
+\newblock (25):1--10, 2017.
+
+\end{thebibliography}
