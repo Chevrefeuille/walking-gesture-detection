@@ -98,9 +98,9 @@ Dr Zeynep Yücel has been working for a while on modeling crowd movements \cite{
 
 Previous work \ref{??} has also shown that using trajectory informations, the composition of a group can be accurately determined. Detection of dyads can be performed relying on data from the sensors that represents the trajectories of the pedestrians.
 
-The goal of this project is to develop a pipeline to automatize the classification process of the dyads gestures. Instead of relying on human referees to decide wether or not a couple of pedestrians are interacting, this decision has to be made by an algorithm.
+The goal of this project is to develop a pipeline to automatize the classification process of the dyads gestures. Instead of relying on human referees to decide wether or not a couple of pedestrians are interacting, this decision should be made by an algorithm. 
 
-\section{Pipeline}
+\section{Proposed solution}
 
 The current pipeline that we wish to implement is as described in this section.
 
@@ -119,12 +119,22 @@ Camera calibration: in order to be able to map the trajectories to the video to 
 Bounding box: to compute the actual portion of the screen that contains the walking dyad, a bounding box has been mapped from the real world to the image plan, using the camera matrix computed with the calibration. In the world coordinates, the bounding box is 3 meters wide and 2 meters high so that it surround the two pedestrian. This bounding box is then used as a mask to remove uninteresting information.
 
 \subsection{Pose estimation}
-The pose estimation process is run using the OpenPose library which is publicly available. The algorithm used is based on body parts inference to identify joints in every frame \cite{Cao2016}.
+The pose estimation process is run using the OpenPose library which is publicly available. The algorithm used is based on body parts inference to identify joints in every frame \cite{Cao2016}. This project is currently state of the art for the pose estimation problem.
 
 \subsection{Action recognition}
 I plan on using machine learning algorithms to classify the video clips. The st-gcn repository provides an neural network trained to classify skeleton pose flows into multiple action class. The network was trained on the Kinetic 
  that contains around 300,000 video clips covering 400 human action classes.
 
+\subsection{Evaluation}
+Using the ground truth provided by human referees, diverse evaluation procedure can be derived based on error measures for this classification problem. Popular metrics to evaluate the performance of a classification system exist, such as precision and recall  or plotting receiver operator characteristics curves. The accuracy of the classifier can also represents a simple evaluation metric.
+
+The usual procedure used to evaluate supervised machine learning algorithm consist in splitting the labeled dataset into two datasets. One of them is used for training (of the classifier in our case) and the other one is used to evaluate the performance of the classifier after training. This partition is essential in order to get a meaningful evaluation of the algorithm. Indeed, one of the biggest challenge of machine learning is to make sure that the developed system is able  to \textit{generalize}. This means that the algorithm should achieve good performance on data that it has never seen during the training.
+
+\section{Personal feedback}
+The first part of the internship consisted mainly of two tasks: bibliography search and data preprocessing. I started by looking for documentation regarding the state of the art of the divers steps of the project (pose estimation, action recognition, and pedestrian models)
+. I find this part of the work extremely rewarding on the scientific level as it allows to discover new algorithms and methods. Even if most of the paper describes solutions that could not be applied on this specific project, I enjoyed reading them.
+
+On a typical day of work, I arrive at the laboratory at 9:30AM and leave around 17:30PM (working 7.5 hours/day). I am suppose to share the laboratory with another french student, a chinese student and 10 japanese students. The six first weeks of my internship coincided with the end of the school year in Japan, so the laboratory was never actually full and most of the times we were only 4 or 5 working. Dr Akito Monden office is located in the same floor as the students office and Dr Yücel's office is located two floors lower.
 \section{Societal and environmental impact}
 
 \subsection{Societal impact}
