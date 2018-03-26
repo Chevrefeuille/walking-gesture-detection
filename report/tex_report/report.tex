@@ -13,6 +13,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[toc,page]{appendix}
+\usepackage{hyperref}
+\usepackage{subcaption}
 
 %\fbox{}
 %\shadowbox{}
@@ -95,20 +97,29 @@ The Graduate School of Natural Science and Technology was originally established
 In the Department of Computer Science, the topics of research are the basic theory and application of information technology, artificial intelligence and computer technology. Examples of research projects includes the development of a visualization tool for a processor or human tracking  algorithm by means of attention control. Dr Akito Monden is the professor of the Theory of Programming and Artificial Intelligence laboratory where this internship takes place and Dr Zeynep Yücel is an assistant professor in the same laboratory.
 
 \section{Problematic}
-Dr Zeynep Yücel has been working for a few years on modeling crowd movements \cite{Zanlungo2017}\cite{Yucel2013}\cite{Yucel2017}. The motivation behind constructing such models are numerous: testing architectural designs for an evacuation process, designing accurate crowd models for movies or video games, etc. Japan being very involved in the robotic industries, these projects guidance was to analyse comportements of pairs of pedestrian (dyads) to potentially develop robot able to walk along side with people in the most natural manner. In order to get real data that could be analysed and from which mathematical models could be derived, cameras and sensors were installed in an underground pedestrian zone. 
+
+\subsection{State of the existing}
+Dr Zeynep Yücel has been working for a few years on modeling crowd movements \cite{Zanlungo2017}\cite{Yucel2013}\cite{Yucel2017}. The motivation behind constructing such models are numerous: testing architectural designs for an evacuation process, designing accurate crowd models for movies or video games, etc. Japan being very involved in the robotic industries, these projects guidance was to analyse comportements of pairs of pedestrian (we will refer such a group as a dyad in the rest of this report) to potentially develop robot able to walk along side with people in the most natural manner. In order to get real data that could be analysed and from which mathematical models could be derived, cameras and sensors were installed in an underground pedestrian zone. 
 
 Previous work \ref{??} has also shown that using trajectory informations, the composition of a group can be accurately determined. Detection of dyads can be performed relying on data from the sensors that represents the trajectories of the pedestrians.
 
-The goal of this project is to develop a pipeline to automatize the classification process of the dyads gestures. Instead of relying on human referees to decide wether or not a couple of pedestrians are interacting, this decision should be made by an algorithm. 
+\subsection{Objectives}
+The goal of this project is to develop a pipeline to automatize the classification process of the dyads gestures. Instead of relying on human referees to decide wether or not a couple of pedestrians are interacting, this decision should be made by an algorithm. Indeed, the annotation process is long and tedious and mistakes are often introduced as annotators might spend several hours doing this repetitive and unexciting task. Two primary milestones can be set in this project.
+
+The first step consists in being able to partition interacting dyads from non-interacting dyads, without any distinction among the kind of gestures that is being performed. The expected results for this task should be greater than 80\% accuracy (more than 80\% of the dyads should be rightly classified).
+
+Later on, we wish to be able to classify more precisely the action performed. For this more complex task, an accuracy greater than 70\% should be achieved. 
+
 
 \section{Proposed solution}
 
-The current pipeline that we wish to implement is as described in this section.
+The current pipeline that we wish to implement is as described in this section. Figure \ref{??} describes the main steps involved. Globally, the first steps consists of video preprocessing to extract the part of the raw videos that involves dyads passing by and to conserve only the parts where gesture detection make sense (pedestrian walking too far away from the camera are too small to be analysed accurately). This step should provide one small video clip for each dyad. Then pose estimation of the pedestrian can be performed on those preprocessed video clips to extract two skeletons for each frame. Finally, these skeletons can be used as input in Graph Neural Network to perform action classification for the dyads. This section will present in details these steps and the encountered challenges.  
 
 \subsection{Input data}
-This section described the initial data that is used along the pipeline.
+This section describes the initial data that is used along the pipeline. 
+
 \begin{description}
-    \item[video files]: set of 15 minutes successive video files
+    \item[video files]: set of 15 minutes successive video files (\texttt{MTS} format). The camera was set in a underground pedestrian pathway (see figure \ref{preprocessing} for an example).
     \item[trajectories]: set of trajectory data file. There is one file for each pedestrian. They were obtained using Laser Range sensors that scanned the pathway to get horizontal data points located approximately around the torso of the pedestrians. Each file consists of a list of x and y coordinates associated with Unix timestamps that corresponds to the date and time the of the position. For each file, its name corresponds to the ID of the pedestrian. This ID are the same as the one used in the annotation file.
     \item[annotations]: one csv file that indicates for each pedestrian (using its ID) the interaction it is involved in. This includes the number of person the pedestrian is interacting with (ranging from 0 to 7). The kind of gesture he is performing (none, gazing at someone, touching someone, speaking with someone or gazing at a common target). This annotations were established by human coders and therefore contains potential errors.
 \end{description}
@@ -124,17 +135,46 @@ I choose to consider the trajectory of the middle point between the two pedestri
 
 In order to be able to map the trajectories to the video to find the appropriate portion to extract, the camera calibration matrix needs to be computed. This is done using OpenCV calibration tool box. In the considered case, no calibration rigs were used but the world coordinates of the sensor poles that appears in the images can be used (see figure \ref{??}). As there is a height difference in the corridor, the sensor closer to the camera are not on the same plan than the furthest one. The OpenCV toolbox does not provide a calibration function that can compute the camera matrix using a set of non planar points (a set of 3D coordinates in the world referential and their 2D matchs in the image referential) unless an input guess is given. For this I used values previously used for similar works, and the results were satisfying (see figure \ref{??}).
 
-The sensor only provides 2D coordinates corresponding to a point 40 cm high at the center of the torso of the pedestrian. The $z$ value was then computed by approximating the actual topology of the corridor. A rough estimation can be made to compute the height difference due to the slope in the middle. This estimation can thereafter be used to compute the height of the foot of the pedestrian for example and plot a dot using OpenCV to validate the trajectory mapping (see figure \ref{??}).
+The sensor only provides 2D coordinates corresponding to a point 40 cm high at the center of the torso of the pedestrian. The $z$ value was then computed by approximating the actual topology of the corridor. A rough estimation can be made to compute the height difference due to the slope in the middle. This estimation can thereafter be used to compute the height of the foot of the pedestrian for example and plot a dot using OpenCV to validate the trajectory mapping (see figure \ref{middle_point_traj}).
+
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{images/middle_point_traj}
+        \caption{}
+        \label{middle_point_traj}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{images/bounding_box}
+        \caption{}
+        \label{bounding_box}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{images/masked}
+        \caption{}
+        \label{masked}
+    \end{subfigure}
+    \caption{Illustration of the various steps of the preprocessing. \ref{middle_point_traj} shows the middle point mapped back to the video, \ref{bounding_box} shows the computed bounding box and \ref{masked} the results of the subtraction using the bounding box as a mask.}\label{preprocessing}
+\end{figure}
 
 The trajectory of one given dyad is generally not entirely interesting. Indeed most of it (and sometimes all of it) takes place too far away from the camera to be able to properly to a pose estimation (see the next subsection); and sometimes the pedestrian are also too close and partially out of frame. Thus a spatial \guillemotleft portion of interest \guillemotright was defined and only the portion of the video that corresponds to the pedestrians walking in this portion was kept.
 
-To compute the actual portion of the screen that contains the walking dyad, a bounding box has been mapped from the real world to the image plan, using the camera matrix computed with the calibration. In the world coordinates, the bounding box is 3 meters wide and 2 meters high so that it surround the two pedestrian. The middle of the bounding box corresponds to the middle point trajectory computed previously. This bounding box is then used as a mask using the OpenCV toolbox to subtract all the unnecessary information.
+To compute the actual portion of the screen that contains the walking dyad, a bounding box has been mapped from the real world to the image plan, using the camera matrix computed with the calibration. In the world coordinates, the bounding box is 3 meters wide and 2 meters high so that it surround the two pedestrian. The middle of the bounding box corresponds to the middle point trajectory computed previously. This bounding box is then used as a mask using the OpenCV toolbox to subtract all the unnecessary information (see figures \ref{bounding_box} and \ref{masked}).
 
 \subsection{Pose estimation}
-The pose estimation process is run using the OpenPose library which is publicly available. The algorithm used is based on body parts inference to identify joints in every frame \cite{Cao2016}. This project is currently state of the art for the pose estimation problem. 
+The pose estimation process is run using the OpenPose library which is publicly available. The algorithm used is based on body parts inference to identify joints in every frame \cite{Cao2016}. This project is currently state of the art for the pose estimation problem. This section will briefly explain the algorithm operation.
 
-\subsection{Action recognition}
-I plan on using machine learning algorithms to classify the video clips. The st-gcn repository provides an neural network trained to classify skeleton pose flows into multiple action class. This section will briefly explain the key concepts of Graph Convolutional Network (GCN) and the specific characteristics of the Spatio-Temporal GCN introduced in \ref{}.
+The model is mainly composed of a multi-stage Convolutional Neural Network that evaluates the confidence maps for body parts (18 different joint: right and left elbow, right and left feet, etc.) but also what the author of the paper call \guillemotleft part affinity fields \guillemotright which corresponds to vectors that encode the direction between the two joints for each pixel on a given limb. Multiple passes allows to iteratively raffine the detection to avoid false detection (right wrist instead of the left one for example). A graph can be modeled using the detected body parts and by scoring the edges using the part affinity fields with the outputs provided by the neural network. In order to retrieve actual skeleton from this graph, which is an NP Hard problem, the authors  introduced a greedy algorithm that perform well and rapidly. 
+
+The toolbox performs well on the preprocessed videos even for the pedestrian walking way from the camera (see \ref{??}). Moreover it comes with a wide diversity of parameters that allows to store extracted skeletons for examples, as detailed in the following section.
+
+\subsection{Action classification}
+I plan on using machine learning algorithms to classify the video clips. For a start, the classifier should be able to distinguish dyads performing any kind of gestures from dyads not doing anything else than walking. Later the goal will be to be able to get 5 classes corresponding to the 4 gestures and 1 class for the absence of gesture.
+
+A bibliography study pointed me toward \ref{??} which describes a Graph Convolutional Network to perform action recognition on skeleton pose flows and that proposes publicly available source code on GitHub. The st-gcn repository provides an neural network trained to classify multiple action classes. This section will briefly explain the key concepts of Graph Convolutional Network (GCN) and the specific characteristics of the Spatio-Temporal GCN introduced in \ref{??}.
 
 The idea behind Graph Convolutional Network is that many datasets are actually ordered as graph or network and that classical neural networks do not provide efficient and well designed way to treat this kind of data. Recent works have introduced models that can deal with graphs. The input of the network is the adjacency matrix of the graph and a convolution operator can be defined as the inner product between a weight function and the input values of particularly sampled nodes. In a classical image convolution, the sampling function gives the squared neighborhood at a given point. In the graph convolution, the set of neighbors up to a certain distance (distance 1 neighbors being one link away from the node, distance 2, two links away, etc.) of a node can be taken. The weight function is generally defined by labeling the neighbors and assigning weights to labels. 
  
@@ -186,6 +226,8 @@ The first part of the internship consisted mainly of two tasks: bibliography sea
 On a typical day of work, I arrive at the laboratory at 9:30AM and leave around 17:30PM (working 7.5 hours/day). I am suppose to share the laboratory with another french student, a chinese student and 10 japanese students. The six first weeks of my internship coincided with the end of the school year in Japan, so the laboratory was never actually full and most of the times we were only 4 or 5 working. Dr Akito Monden office is located in the same floor as the students office and Dr Yücel's office is located two floors lower. 
 
 The overall ambience in the laboratory is great and the integration process went very smoothly, probably mainly because we are all students and because of the Japanese helpfulness and kindness. The furniture in the office also reflect this friendly environments, with bookshelves full of manga, coding books and retro console and games. A microwave and a fridge are also available directly in the office room. Once a week we all meet with the professors to eat together.
+
+The project is publicly available on GitHub at \url{https://github.com/Chevrefeuille/walking-gesture-detection}. In a concern of privacy protection and size management, the videos are not reachable.
 
 \subsection{Difficulties}
 I relation to the project, the main difficulties that I experienced where linked with environment issues. I started working on my personal Mac Book Pro but many algorithms that I needed to use to test feasibility of considered solutions required an NVidia GPU. Indeed, most machine learning require heavy computation that is generally accelerated on GPU, very often using the CUDA toolkit that integrates well with traditional machine learning libraries such as Torch or Tensorflow. I started preprocessing the video data until I could use the wanted algorithms on a new computer.
