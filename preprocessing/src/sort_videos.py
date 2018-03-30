@@ -35,9 +35,11 @@ if __name__ == "__main__":
                     if gestures[i]:
                         no_gesture = False
                         dest_path = 'videos/dyads/gestures/' + gesture_map[i] + '/' + str(pedestrian_id) + '.avi'
+                        print('Copying {} to {}'.format(video_path, dest_path))
                         copyfile(video_path, dest_path)
                 if no_gesture:
                     dest_path = 'videos/dyads/no_gestures/' + str(pedestrian_id) + '.avi'
+                    print('Copying {} to {}'.format(video_path, dest_path))
                     copyfile(video_path, dest_path)
                         
 

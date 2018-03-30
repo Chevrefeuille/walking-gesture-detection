@@ -6,7 +6,7 @@ from pprint import pprint
 
 def list_video_names(videos_path, video_list_file):
     """
-    Creates a file containing the list of all the video names of the video in 'video_path'
+    Creates a file containing the list of all the video names for the videos in 'video_path'
     """
     with open(video_list_file, 'w') as f:
         p = Path(videos_path)
@@ -35,6 +35,7 @@ if __name__ == "__main__":
     with open(video_list_file, 'r') as f:
         for line in f:
             video_name  = line.strip('\n')
+            print('Converting video {}'.format(video_name))
             stgcn_data_array = []
             stgcn_data = {}
             dest_path = stgcn_json_path + video_name + '.json'

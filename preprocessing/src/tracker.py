@@ -154,31 +154,6 @@ def find_intersecting_rois(rois, tracker):
             pick.append(roi)
     return pick
 
-def find_two_closest_rois(rois, tracker):
-    """
-    Filter pedestrian detections to keep only the ones consistent with the trajectory
-        input:
-            rois: the list of detected rois
-            tracker: the point representing the trajectory of the dyad
-        output: the two rois closest to the tracker
-    """
-    pick = []
-    distances = {}
-    xt, yt = tracker
-    for roi in rois:
-        x1, y1, x2, y2 = roi
-        xm, ym = (x1 + x2)/2, (y1 + y2)/2
-        delta_x = abs(xm - xt)
-        if delta_x > 10: # to get rid of in between pedestrian
-            dist = ((xm - xt)**2 + (ym - yt)**2 )**(1/2)
-            distances[dist] = roi
-    sorted_distances = sorted(distances)
-    if len(sorted_distances) >= 2:
-        return distances[sorted_distances[0]], distances[sorted_distances[1]]
-    else:
-        return False
-    # return pick
-
 def compute_z_coordinate(x, y):
     """
     Compute the z coordinate according to the estimated map of the corridor
@@ -313,14 +288,11 @@ def main(argv):
         (width, height), camera_matrix, None, flags=cv2.CALIB_USE_INTRINSIC_GUESS
     )
 
-    # split the video into corresponding sub-videos
-    subvideo_times = {} # contains ref for start time and stop time
-
     valid_trajectories = {} # trajectories consistent with the input video
 
     for pedestrian_id, trajectory in dyads_trajectories.items():
         trajectory = find_acceptable_portion(trajectory)
-        if len(trajectory) != 0:
+        if len(trajectory) > 10:
             t_init = trajectory[0][0]
             if t_init < video_duration:
                 valid_trajectories[pedestrian_id] = trajectory                
@@ -371,9 +343,6 @@ def main(argv):
         image_trajectories[pedestrian_id] = [[time_list[i]] + image_traj[i] for i in range(len(image_traj))]
         bbs[pedestrian_id] = [image_bl_bb, image_tr_bb]
 
-    # initialize the HOG descriptor/person detector
-    hog = cv2.HOGDescriptor()
-    hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
     for pedestrian_id in image_trajectories:
         traj = image_trajectories[pedestrian_id]
@@ -381,12 +350,16 @@ def main(argv):
         bb = bbs[pedestrian_id]
     
         # compute projection of the sensor references
-        # sensor_points, jacobian = cv2.projectPoints(
-        #     calibration_test_coordinates,
-        #     rvecs[0], tvecs[0], camera_matrix, dist_coeffs)
-        # sensor_points = [s[0].tolist() for s in sensor_points]
-        # # plt.ion()
-        # # plt.scatter([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates])
+        sensor_points, jacobian = cv2.projectPoints(
+            calibration_world_coordinates,
+            rvecs[0], tvecs[0], camera_matrix, dist_coeffs)
+        sensor_points = [s[0].tolist() for s in sensor_points]
+        sensor_points2, jacobian2 = cv2.projectPoints(
+            calibration_test_coordinates,
+            rvecs[0], tvecs[0], camera_matrix, dist_coeffs)
+        sensor_points2 = [s[0].tolist() for s in sensor_points2]
+        # plt.ion()
+        # plt.scatter([c[0] for c in calibration_world_coordinates], [c[1] for c in calibration_world_coordinates])
 
         frame_id = 0
         coord_id = 0
@@ -403,20 +376,20 @@ def main(argv):
         masked_video = cv2.VideoWriter(
             video_folder + str(pedestrian_id) + '.avi',
             fourcc, 30, (340, 256)
-        )        
-        # while(True):
-        for _ in range(300): # keeping 300 frames for st-gcn
+        )    
 
+        for _ in range(300): # keeping 300 frames for st-gcn
             # capture frame-by-frame
-            ret, frame = dyad_cap.read()
+            _, frame = dyad_cap.read()
 
             frame_time = frame_id / fps + t_0
 
-            if not type(frame) is np.ndarray or coord_id + 1 >= len(traj): # back to start of video
+            if (type(frame) is not np.ndarray) or coord_id + 1 >= len(traj): # back to start of video
                 dyad_cap.set(cv2.CAP_PROP_POS_MSEC, t_0 * 1000)
                 frame_id, coord_id = 0, 0
                 frame_time = t_0
-          
+                continue
+            
             if traj[coord_id + 1][0] < frame_time:
                 coord_id += 1
 
@@ -430,11 +403,16 @@ def main(argv):
             # plt.scatter(int(world_traj[coord_id][1]), int(world_traj[coord_id][2]), 2, 'g')
             # plt.pause(0.001)
 
-            # adding sensor reference
+            # # adding sensor reference
+            # for point in calibration_image_coordinates:
+            #     cv2.circle(frame, (int(point[0]), int(point[1])), 3, (255,0,0), -1) 
+            # # adding sensor reference
             # for point in sensor_points:
-                # cv2.circle(frame, (int(point[0]), int(point[1])), 3, (0,0,255), -1) 
-            
-            # masked_video.write(frame)
+            #     cv2.circle(frame, (int(point[0]), int(point[1])), 3, (0,0,255), -1) 
+            # # adding sensor reference
+            # for point in sensor_points2:
+            #     cv2.circle(frame, (int(point[0]), int(point[1])), 3, (0,255,0), -1) 
+
         
             # resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
@@ -449,7 +427,7 @@ def main(argv):
 
             frame = cv2.bitwise_and(frame, frame, mask=mask)
 
-            # resized_frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
+            frame = cv2.resize(frame, dsize=(0, 0), fx=1/2, fy=1/2)
 
             # # detect people in the image
             # (rects, weights) = hog.detectMultiScale(resized_frame, winStride=(4, 4),
@@ -475,10 +453,11 @@ def main(argv):
             masked_video.write(frame)
 
             # display the resulting frame
-            # cv2.imshow('frame', frame)
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
+            cv2.imshow('frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
             frame_id += 1
+
         # When everything done, release the capture
         dyad_cap.release()
         masked_video.release()

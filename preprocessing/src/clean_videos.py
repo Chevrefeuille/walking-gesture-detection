@@ -9,6 +9,12 @@ if __name__ == "__main__":
         print('Removing ' + video_path)
         os.remove(video_path)
 
+    p = Path('../data/videos/').glob('*.avi')
+    for path in p: # each video folder
+        video_path = str(path)
+        print('Removing ' + video_path)
+        os.remove(video_path)
+
     folder = '2010_10_06'
     p = Path('videos/' + folder)
     for path in p.iterdir(): # each video folder
