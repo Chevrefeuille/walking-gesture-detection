@@ -16,4 +16,5 @@ preprocessing/annotations/
 
 *.pdf
 *.avi
+*.MTS
 *.json

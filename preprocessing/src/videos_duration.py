@@ -9,10 +9,12 @@ if __name__ == "__main__":
     for path in p.iterdir():
         if path.is_dir():
             path_in_str = str(path)
-            video_id = path_in_str.split('/')[-1]
-            video_path = path_in_str + '/' + video_id + '.avi'
-            clip = VideoFileClip(video_path)
-            durations[video_id] = clip.duration
+            p = Path(path_in_str)
+            for file_path in p.glob('*'):
+                if file_path.is_file():
+                    video_id = path_in_str.split('/')[-1]
+                    clip = VideoFileClip(str(file_path))
+                    durations[video_id] = clip.duration
 
     duration_file = folder + '/durations.dat'
     with open(duration_file, 'w') as f:

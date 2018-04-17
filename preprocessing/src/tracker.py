@@ -46,15 +46,17 @@ def find_video_reference_time(vid, folder):
             total_time: the total time in second corresponding to the beginning of this video
             video_duration: the duration of this video
     """
+    vid = int(vid)
     duration_file = folder + '/durations.dat'
     begining, video_duration = 0, 0
     with open(duration_file, 'r') as f:
         for line in f.readlines():
             line_vid, duration = line.split()
-            if line_vid == vid:
+            line_vid = int(line_vid)
+            if line_vid < vid:
+                begining += float(duration)
+            elif line_vid == vid:
                 video_duration = float(duration)
-                break
-            begining += float(duration)
     return begining, video_duration
 
 
@@ -453,9 +455,9 @@ def main(argv):
             masked_video.write(frame)
 
             # display the resulting frame
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            # cv2.imshow('frame', frame)
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
             frame_id += 1
 
         # When everything done, release the capture
