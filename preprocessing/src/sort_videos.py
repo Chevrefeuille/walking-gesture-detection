@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from shutil import copyfile
+import json
 
 def find_class(pedestrian_id, folder):
     """
@@ -21,6 +22,8 @@ if __name__ == "__main__":
         2: 'target_gaze',
         3: 'contact'
     }
+    class_file = 'videos/' + folder + '/classes.json'
+    class_file_content = {}
     p = Path('videos/' + folder)
     for path in p.iterdir(): # each video folder
         if path.is_dir():
@@ -41,5 +44,11 @@ if __name__ == "__main__":
                     dest_path = 'videos/dyads/no_gestures/' + str(pedestrian_id) + '.avi'
                     print('Copying {} to {}'.format(video_path, dest_path))
                     copyfile(video_path, dest_path)
-                        
+                    class_file_content[pedestrian_id] = 0
+                else:
+                    class_file_content[pedestrian_id] = 1
+                    
+    with open(class_file, 'w') as f:
+        json.dump(class_file_content, f)
+                
 
