@@ -22,7 +22,7 @@ if __name__ == "__main__":
         2: 'target_gaze',
         3: 'contact'
     }
-    class_file = 'videos/' + folder + '/classes.json'
+    class_file = '../data/classes.json'
     class_file_content = {}
     p = Path('videos/' + folder)
     for path in p.iterdir(): # each video folder
