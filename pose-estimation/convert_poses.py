@@ -27,6 +27,13 @@ if __name__ == "__main__":
     # file that will contain the labels for each video
     labels_file = '../data/poses/fake_labels.json'
 
+    classes_table = {
+        0: 'no_gestures',
+        1:'gestures'
+        }
+
+    classes = data = json.load(open('../data/classes.json'))
+
     list_video_names(videos_path, video_list_file)
 
     p = Path(openpose_json_path)
@@ -58,14 +65,9 @@ if __name__ == "__main__":
                 frame_data['skeleton'] = skeletons
                 stgcn_data_array += [frame_data]
 
-            labels[video_name] = {"has_skeleton": True, 
-                "label": "fake_label", 
-                "label_index": 0}
+            c = classes[video_name]
             stgcn_data['data'] = stgcn_data_array
-            stgcn_data['label'] = 'fake_label'
-            stgcn_data['label_index'] = 0
+            stgcn_data['label'] = classes_table[c]
+            stgcn_data['label_index'] = c
             with open(dest_path, 'w') as outfile:
                 json.dump(stgcn_data, outfile)
-
-    with open(labels_file, 'w') as label_file:
-        json.dump(labels, label_file)

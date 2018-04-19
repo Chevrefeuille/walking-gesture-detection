@@ -4,6 +4,7 @@ import json
 from pprint import pprint
 import matplotlib.pyplot as plt
 import itertools
+import shutil
 
 def find_most_confident(skeletons):
     """
@@ -58,6 +59,11 @@ if __name__ == "__main__":
     # folder that contains the st-gcn files (one per video)
     stgcn_json_path =  '../data/poses/st-gcn_format/'
     consistent_json_path =  '../data/poses/normalized_st-gcn_format/'
+
+
+    # cleaning previous split
+    shutil.rmtree(consistent_json_path)
+    os.makedirs(consistent_json_path)
 
     p = Path(stgcn_json_path)
     

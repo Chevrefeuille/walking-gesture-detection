@@ -13,5 +13,11 @@ if __name__ == "__main__":
         json_path = str(path)
         print('Removing ' + json_path)
         os.remove(json_path)
+    
+    p = Path('../data/poses/normalized_st-gcn_format')
+    for path in p.glob('*.json'): # each json file
+        json_path = str(path)
+        print('Removing ' + json_path)
+        os.remove(json_path)
                         
 

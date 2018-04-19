@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Pose checker.')
     # folder that will contain the converted files (one per video)
-    parser.add_argument('--json_path', default='../data/poses/normalized_st-gcn_format/10533200.json')
+    parser.add_argument('--json_path', default='../ data/poses/normalized_st-gcn_format/10533200.json')
 
     arg = parser.parse_args()
 
